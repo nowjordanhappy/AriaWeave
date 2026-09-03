@@ -15,25 +15,32 @@ test.describe('latency', () => {
   test.beforeAll(async () => { ctx = await launchWithExtension(); });
   test.afterAll(async () => { await ctx?.close(); });
 
+  // The observer must exist before the document does. An earlier version of
+  // this test awaited page.evaluate() and only then called page.goto(), so the
+  // observer was installed on about:blank, the evaluate blocked for its own
+  // timeout, and the navigation happened afterwards. It reported Infinity on
+  // every run no matter how fast the extension was — a test that cannot pass
+  // measures nothing, and this one was reading as a latency failure.
   test('first visible description lands inside the budget', async () => {
     const page = await ctx.newPage();
 
-    const elapsed = await page.evaluate(async (budget) => {
+    await page.addInitScript(() => {
       const t0 = performance.now();
-      return new Promise((resolve) => {
-        const done = (v) => { obs.disconnect(); clearTimeout(timer); resolve(v); };
+      window.__ariaweaveFirstDescription = new Promise((resolve) => {
+        const named = () => document.querySelector('img[alt]:not([alt=""])');
         const obs = new MutationObserver(() => {
-          const named = document.querySelector('img[alt]:not([alt=""])');
-          if (named) done(performance.now() - t0);
+          if (named()) { obs.disconnect(); resolve(performance.now() - t0); }
         });
-        obs.observe(document.documentElement, {
-          subtree: true, attributes: true, attributeFilter: ['alt'],
-        });
-        const timer = setTimeout(() => done(Infinity), budget * 3);
+        obs.observe(document, { subtree: true, attributes: true, attributeFilter: ['alt'] });
       });
-    }, FIRST_VISIBLE_BUDGET_MS);
+    });
 
     await page.goto(fixtureUrl('01-missing-alt.html'));
+    const elapsed = await page.evaluate((budget) => Promise.race([
+      window.__ariaweaveFirstDescription,
+      new Promise((r) => setTimeout(() => r(Infinity), budget * 3)),
+    ]), FIRST_VISIBLE_BUDGET_MS);
+
     expect(elapsed, 'no description ever appeared').toBeLessThan(Infinity);
     expect(elapsed).toBeLessThan(FIRST_VISIBLE_BUDGET_MS);
     await page.close();
