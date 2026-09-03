@@ -161,10 +161,10 @@ Two traps worth keeping, because both fail silently:
 
 Full suite, all three lanes merged, after the fix: **31 passed, 11 failed.**
 
-## 6. `latency.spec.js` observes the wrong document, and always has
+## 6. Fixed: `latency.spec.js` observed the wrong document, and always had
 
-Independent of everything above, and **not fixed** — Lane D's call, and outside
-what the orchestrator authorized.
+Independent of finding 5. Fixed on a second explicit authorization, after being
+reported and deliberately left alone the first time.
 
 `tests/latency.spec.js:21-37` awaits `page.evaluate()` **before**
 `page.goto()`. The MutationObserver is therefore installed on `about:blank`,
@@ -180,8 +180,7 @@ expect(elapsed, 'no description ever appeared').toBeLessThan(Infinity);
 
 `elapsed` is `Infinity` on every run no matter how fast the extension is, so
 this test cannot pass and its failure carries no information about latency. It
-needs `page.addInitScript()` to install the observer before navigation and stash
-the timestamp on a global the test reads after `goto`.
-
-Worth fixing before the demo: SPEC §6 criterion 4 is half latency, and right now
-nothing measures it.
+needed `page.addInitScript()` to install the observer before navigation and
+stash the promise on a global the test reads after `goto`. With that, both
+latency tests pass in 4.9 s — so SPEC §6 criterion 4 is measured for the first
+time rather than merely asserted.
