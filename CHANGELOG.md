@@ -16,3 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Decorative images are silenced with `alt=""` instead of being described.
 - Every fixed element carries `data-ariaweave-tier`, so what produced a
   description is visible in the page.
+- Popup: on/off toggle, a count of fixed elements, the before → after list for
+  the current tab, and a per-item flag for a bad description.
+- Inspection mode: an on-page overlay showing before → after and the tier that
+  produced each description. Off by default.
