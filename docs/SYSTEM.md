@@ -112,8 +112,13 @@ These are what turn "we used AI" into an engineering system, and they are cheap:
 
 - **The harness runs automatically on every change** — a hook, not a polite
   request in a prompt.
-- **Worktree boundaries make out-of-lane edits impossible**, rather than
-  discouraged.
+- **Worktree boundaries isolate each lane by construction.** Another lane's
+  in-progress work is not in the folder, so nothing couples to it by accident
+  and a failure is attributable to the lane that caused it. This is a strong
+  convention, **not a sandbox** — a shell can walk up a directory. An earlier
+  draft claimed out-of-lane edits were impossible; they are merely absent from
+  view, which is why `CLAUDE.md` states the rule explicitly instead of assuming
+  the structure enforces it.
 - **The verifier's retry loop has a hard cap**, so it cannot spin forever.
 - **The router is deterministic code.** Anything decidable by a rule is decided
   by a rule; models are only reached for judgment.

@@ -22,6 +22,10 @@ source of truth for requirements, architecture and the definition of done.
   success only.
 - **Description language follows the page**, from `document.documentElement.lang`
   — never a global setting. The screen reader takes its voice from the DOM.
+- **Edit only your lane's folder.** Worktrees keep the other lanes out of sight,
+  but they are not a sandbox — a shell can reach a sibling directory. If a fix
+  seems to belong in another lane's files, that is a contract question, not a
+  patch you make.
 - **No new dependencies** without asking. This is a 13-hour build; a few lines
   beats a package.
 
