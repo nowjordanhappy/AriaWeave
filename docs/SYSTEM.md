@@ -30,9 +30,13 @@ sessions (isolation of context). Both are boundaries, not conventions: a lane
 | Lane | Owns | Context it is given | Its harness slice |
 |---|---|---|---|
 | **D — harness** | `tests/` | Spec only | Itself. Everything red at handoff |
-| **A — content** | `content/` | Spec + DOM injection contract | Finds every planted candidate; injects; idempotency holds |
+| **A — content** | `content/`, `popup/` | Spec + DOM injection contract | Finds every planted candidate; injects; idempotency holds |
 | **B — pipeline** | `background/` | Spec + pipeline contract + API docs | Candidates in, descriptions out; tier routing; cache hits |
-| **C — verifier** | `verifier.js` + scoring | Spec + quality rules + labeled reference set | Rejects planted-bad text, accepts good; retry loop terminates |
+| **C — verifier** | `verifier/` + scoring | Spec + quality rules + labeled reference set | Rejects planted-bad text, accepts good; retry loop terminates |
+
+Each lane's full brief is in `docs/lanes/{A,B,C}.md` — one file per lane,
+carrying that lane's contract, its traps and its harness slice, and nothing
+about the others.
 
 **Each lane's session gets only its row** — not the whole repo, not the other
 lanes' code. This is what context engineering means in practice.

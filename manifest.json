@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "AriaWeave",
+  "version": "0.1.0",
+  "description": "Injects real alt and aria-label attributes into the live DOM so your screen reader works better on any site.",
+  "permissions": ["storage"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background/service-worker.js", "type": "module" },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/index.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "action": { "default_popup": "popup/popup.html", "default_title": "AriaWeave" }
+}
