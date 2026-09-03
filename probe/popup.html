@@ -19,11 +19,19 @@
   .detail { color: #9aa39d; word-break: break-word; white-space: pre-wrap; margin-top: 2px; }
   #verdict { margin-top: 14px; padding: 10px 12px; border: 1px solid #2a3033;
              border-radius: 3px; white-space: pre-wrap; }
+  button { margin-top: 12px; width: 100%; padding: 9px 12px; cursor: pointer;
+           font: inherit; font-weight: 600; color: #14171a; background: #5fc2a8;
+           border: 0; border-radius: 3px; }
+  button:disabled { background: #2a3033; color: #9aa39d; cursor: default; }
+  button:focus-visible { outline: 2px solid #96a2f2; outline-offset: 2px; }
+  .note { color: #9aa39d; font-size: 11px; margin: 8px 0 0; }
   #shot { display: block; margin-top: 10px; width: 96px; height: 96px;
           border: 1px solid #2a3033; border-radius: 3px; }
 </style>
 <h1>AriaWeave Nano probe</h1>
 <p class="sub">Does the Prompt API accept image input here?</p>
 <div id="out"></div>
+<button id="go" hidden></button>
+<p class="note" id="note" hidden></p>
 <div id="verdict">running…</div>
 <script src="probe.js"></script>

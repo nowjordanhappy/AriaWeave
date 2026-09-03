@@ -3,9 +3,17 @@
 //
 // Every step reports what actually happened, including the exact error. The
 // point is discovery — nothing here assumes an API shape.
+//
+// Chrome refuses to start the model download without a user gesture, so the
+// read-only checks run on load and the download runs from a click. An earlier
+// version auto-ran everything and reported "T3 does not exist" for what was
+// really "nobody clicked anything" — a confident wrong answer, which is the
+// failure mode the verifier exists to catch.
 
 const out = document.getElementById('out');
 const verdictEl = document.getElementById('verdict');
+const goBtn = document.getElementById('go');
+const noteEl = document.getElementById('note');
 const findings = {};
 
 function row(state, label, detail) {
@@ -18,6 +26,7 @@ function row(state, label, detail) {
   el.querySelector('.label').textContent = label;
   el.querySelector('.detail').textContent = detail ? '\n' + detail : '';
   out.appendChild(el);
+  return el;
 }
 
 const err = (e) => `${e?.name || 'Error'}: ${e?.message || String(e)}`;
@@ -40,69 +49,106 @@ function findApi() {
   return [null, null];
 }
 
-async function main() {
-  // 1 — environment
+let API = null;
+
+// ---- read-only checks: safe to run on load, no gesture needed ----------------
+
+async function inspect() {
   const chromeVersion = (navigator.userAgent.match(/Chrome\/(\d+\.[\d.]+)/) || [])[1] || 'unknown';
   row('info', `Chrome ${chromeVersion}`, navigator.platform);
   findings.chromeVersion = chromeVersion;
 
-  // 2 — is there an API at all
-  const [apiName, API] = findApi();
+  let apiName;
+  [apiName, API] = findApi();
   if (!API) {
     row('bad', 'No Prompt API in this context',
         'Tried: LanguageModel, chrome.aiOriginTrial.languageModel, ai.languageModel');
     findings.api = null;
     return verdict();
   }
-  row('ok', `Prompt API found`, apiName);
+  row('ok', 'Prompt API found', apiName);
   findings.api = apiName;
 
-  // 3 — text availability
   try {
     findings.textAvailability = await API.availability();
     row(findings.textAvailability === 'available' ? 'ok' : 'warn',
-        `Text availability: ${findings.textAvailability}`,
-        findings.textAvailability === 'downloadable'
-          ? 'Model not downloaded yet. Creating a session below will start the download.'
-          : '');
+        `Text availability: ${findings.textAvailability}`);
   } catch (e) {
     findings.textAvailability = 'error';
     row('bad', 'availability() threw', err(e));
   }
 
-  // 4 — image availability. This is the question that actually matters.
+  // The question that actually matters. "downloadable" already proves image
+  // input is a supported modality here — it is not the same as "unavailable".
   try {
     findings.imageAvailability = await API.availability({ expectedInputs: [{ type: 'image' }] });
-    row(findings.imageAvailability === 'available' ? 'ok' : 'warn',
-        `Image availability: ${findings.imageAvailability}`);
+    const good = findings.imageAvailability === 'available';
+    const possible = findings.imageAvailability === 'downloadable'
+                  || findings.imageAvailability === 'downloading';
+    row(good ? 'ok' : possible ? 'warn' : 'bad',
+        `Image availability: ${findings.imageAvailability}`,
+        possible ? 'Image input is supported. The model still needs downloading.' : '');
   } catch (e) {
     findings.imageAvailability = 'error';
-    row('warn', 'availability({image}) threw', err(e) + '\nFalling through to a real create() attempt.');
+    row('warn', 'availability({image}) threw', err(e));
   }
 
-  // 5 — create a session that expects an image
+  if (findings.imageAvailability === 'unavailable') {
+    return verdict();
+  }
+
+  // Chrome requires a click before it will fetch the model.
+  goBtn.hidden = false;
+  goBtn.textContent = findings.imageAvailability === 'available'
+    ? 'Run the image test'
+    : 'Download the model and run the image test';
+  if (findings.imageAvailability !== 'available') {
+    noteEl.hidden = false;
+    noteEl.textContent = 'Chrome may need to fetch the model. If the component is already on '
+                       + 'this machine it is near-instant; on a clean profile it is several GB. '
+                       + 'Either way keep this page open — run it in a tab, not the popup, '
+                       + 'which closes when it loses focus.';
+  }
+  verdictEl.textContent = 'Waiting for a click. Chrome will not start the download without one.';
+  goBtn.addEventListener('click', run, { once: true });
+}
+
+// ---- the real test: needs the gesture ---------------------------------------
+
+async function run() {
+  goBtn.disabled = true;
   let session;
+
+  let downloaded = false;
   try {
+    verdictEl.textContent = 'creating session…';
+    const t0 = performance.now();
     session = await API.create({
       expectedInputs: [{ type: 'image' }],
       monitor(m) {
         m.addEventListener('downloadprogress', (e) => {
+          downloaded = true;
           verdictEl.textContent = `downloading model… ${Math.round(e.loaded * 100)}%`;
         });
       },
     });
-    row('ok', 'Session created with image input expected');
+    const secs = ((performance.now() - t0) / 1000).toFixed(1);
+    findings.setupSeconds = Number(secs);
+    findings.downloaded = downloaded;
+    row('ok', downloaded
+          ? `Model downloaded and session created in ${secs}s`
+          : `Session created in ${secs}s — model already present, nothing downloaded`);
     findings.sessionCreated = true;
   } catch (e) {
     row('bad', 'create({image}) failed', err(e));
     findings.sessionCreated = false;
+    findings.createError = err(e);
     return verdict();
   }
 
-  // 6 — the real test: prompt with an actual image
   try {
     const blob = await testImage();
-    document.getElementById('verdict').textContent = 'prompting with image…';
+    verdictEl.textContent = 'prompting with image…';
     const started = performance.now();
     const answer = await session.prompt([{
       role: 'user',
@@ -115,12 +161,11 @@ async function main() {
     findings.answer = answer.trim();
     row('ok', `Image prompt returned in ${findings.latencyMs}ms`, findings.answer);
 
-    // Did it actually look at the picture?
-    const saw = /red|circle|blue|square|round/i.test(answer);
+    const saw = /red|circle|blue|square|round|rojo|círculo|azul/i.test(answer);
     findings.sawImage = saw;
     row(saw ? 'ok' : 'warn',
         saw ? 'Description matches the drawn image' : 'Description does not mention what was drawn',
-        saw ? '' : 'Expected some mention of a red circle or blue square. Possible hallucination.');
+        saw ? '' : 'Expected a red circle or blue square. Possible hallucination.');
 
     const img = document.createElement('img');
     img.id = 'shot';
@@ -137,28 +182,29 @@ async function main() {
   verdict();
 }
 
-function verdict() {
-  const works = findings.sessionCreated && findings.answer && findings.sawImage;
-  const partial = findings.sessionCreated && findings.answer && !findings.sawImage;
+// ---- verdict ----------------------------------------------------------------
 
-  if (works) {
-    verdictEl.textContent =
-      `T3 EXISTS.\nThe tier ladder stands as specced. Lane D can write fixtures for four tiers.`;
-    verdictEl.style.borderColor = '#5fc2a8';
-  } else if (partial) {
-    verdictEl.textContent =
-      `T3 IS DOUBTFUL.\nThe API answered but may not have seen the image. Re-run before trusting it.`;
-    verdictEl.style.borderColor = '#e0c063';
-  } else {
-    verdictEl.textContent =
-      `T3 DOES NOT EXIST HERE.\nT1 and T2 must carry the entire free path alone. Do not add a second\n`
-      + `cloud model — that breaks the zero-config promise instead of saving it.`;
-    verdictEl.style.borderColor = '#e48d74';
+function verdict() {
+  const set = (text, color) => {
+    verdictEl.textContent = text;
+    verdictEl.style.borderColor = color;
+  };
+
+  if (!findings.api) {
+    set('T3 DOES NOT EXIST HERE.\nNo built-in Prompt API at all. T1 and T2 carry the free path.', '#e48d74');
+  } else if (findings.imageAvailability === 'unavailable') {
+    set('T3 IS TEXT-ONLY HERE.\nNo image input, so it cannot describe pictures. Useless for this project.', '#e48d74');
+  } else if (findings.sessionCreated === false) {
+    set(`T3 UNPROVEN.\nThe model exists but the session failed:\n${findings.createError}`, '#e48d74');
+  } else if (findings.answer && findings.sawImage) {
+    set(`T3 EXISTS.\nImage described in ${findings.latencyMs}ms. The tier ladder stands as specced.`, '#5fc2a8');
+  } else if (findings.answer) {
+    set('T3 IS DOUBTFUL.\nIt answered without mentioning what was drawn. Re-run before trusting it.', '#e0c063');
   }
   console.log('[AriaWeave probe]', findings);
 }
 
-main().catch((e) => {
+inspect().catch((e) => {
   row('bad', 'Probe crashed', err(e));
   verdict();
 });
