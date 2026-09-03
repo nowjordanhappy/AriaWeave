@@ -21,3 +21,18 @@ To add one:
 
 Not faked in advance. A synthetic page pretending to be gob.pe would prove
 nothing and would be found out in the demo.
+
+## Why the assets are PNG
+
+`createImageBitmap()` cannot decode SVG in a worker — there is no layout engine
+there. Measured: SVG fails `InvalidStateError: The source image could not be
+decoded`, PNG succeeds. The pipeline runs in a service worker, so an SVG fixture
+is invisible to every tier below T1 and the corpus silently tests nothing.
+
+The `.svg` files are kept as the source. Regenerate a `.png` by rendering the
+`.svg` in a sized HTML wrapper and screenshotting it headless; a direct
+`--screenshot` of an `.svg` ignores `--window-size` and gives you 756x469.
+
+Real sites do serve SVG images. Describing them needs the content script to
+rasterise in the page, where a layout engine exists, and hand a data URL to the
+pipeline — `loadImage()` already prefers `context.dataUrl` if present. Not built.
