@@ -1,0 +1,29 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>AriaWeave Nano probe</title>
+<style>
+  body { width: 460px; margin: 0; padding: 14px 16px 18px;
+         font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+         background: #14171a; color: #e9ece6; }
+  h1 { font-size: 13px; margin: 0 0 2px; letter-spacing: .08em; text-transform: uppercase; }
+  .sub { color: #9aa39d; margin: 0 0 14px; font-size: 11px; }
+  .row { display: grid; grid-template-columns: 20px 1fr; gap: 8px;
+         padding: 6px 0; border-top: 1px solid #2a3033; align-items: start; }
+  .row:first-of-type { border-top: 0; }
+  .mark { font-weight: 700; }
+  .ok   .mark { color: #5fc2a8; }
+  .bad  .mark { color: #e48d74; }
+  .warn .mark { color: #e0c063; }
+  .info .mark { color: #96a2f2; }
+  .label { font-weight: 600; }
+  .detail { color: #9aa39d; word-break: break-word; white-space: pre-wrap; margin-top: 2px; }
+  #verdict { margin-top: 14px; padding: 10px 12px; border: 1px solid #2a3033;
+             border-radius: 3px; white-space: pre-wrap; }
+  #shot { display: block; margin-top: 10px; width: 96px; height: 96px;
+          border: 1px solid #2a3033; border-radius: 3px; }
+</style>
+<h1>AriaWeave Nano probe</h1>
+<p class="sub">Does the Prompt API accept image input here?</p>
+<div id="out"></div>
+<div id="verdict">running…</div>
+<script src="probe.js"></script>

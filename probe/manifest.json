@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "AriaWeave — Nano probe",
+  "version": "0.0.1",
+  "description": "Hour-zero probe: does Chrome's built-in Prompt API accept image input on this machine?",
+  "permissions": ["aiLanguageModelOriginTrial"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "AriaWeave Nano probe"
+  }
+}
