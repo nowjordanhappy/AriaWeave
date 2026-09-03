@@ -127,39 +127,24 @@ const humanise = (s) =>
 // needing an opt-in, OCR is what makes the free path produce anything but rules.
 // ---------------------------------------------------------------------------
 
-// The bundle is not vendored yet (orchestrator's call, deferred), so T2 is an
-// absent rung today — which SPEC 3.3 already treats as an ordinary branch.
+// Not vendored yet — the orchestrator deferred the dependency — so T2 is an
+// absent rung today, which SPEC 3.3 already treats as an ordinary branch.
 //
-// It CANNOT be loaded lazily when it does land. An MV3 service worker forbids
-// dynamic import() ("import() is disallowed on ServiceWorkerGlobalScope"), so
-// vendoring the bundle means a static import at the top of this file:
-//     import * as tesseract from './vendor/tesseract.js';
-//     const ocrEngine = tesseract;
-// and nothing else here changes. Writing it as a lazy load was a bug: it threw
-// every time and the catch hid it, so T2 would have reported itself absent even
-// with the bundle sitting right there.
-const ocrEngine = null;
+// Deliberately a stub rather than an implementation waiting behind a flag. The
+// body would be unreachable and, worse, unverified: code that has never met the
+// real library while reading as though it had.
+//
+// When the bundle lands it CANNOT be loaded lazily. An MV3 service worker
+// forbids dynamic import(), so the import list is fixed at load time:
+//
+//     import { createWorker } from './vendor/tesseract.js';
+//
+// then recognise image.blob, reject a read under ~8 characters as illegible,
+// and scale Tesseract's 0..100 confidence into 0..1 — it is a generous scorer,
+// so leave headroom under the verifier's bar rather than trusting it.
+export async function T2() { return null; }
 
-let ocrWorker;
-export async function T2(candidate, lang, image) {
-  const engine = ocrEngine;
-  if (!engine || !image) return null;
-
-  try {
-    ocrWorker ||= await engine.createWorker(base(lang) === 'es' ? 'spa' : 'eng');
-    const { data } = await ocrWorker.recognize(image.blob);
-    const text = clean(data?.text || '');
-    if (text.length < 8) return null;                 // nothing legible: fall through
-    // OCR confidence is 0..100 and notoriously generous; halve the headroom so a
-    // smug garbage read still lands under the verifier's bar.
-    const confidence = Math.min(0.95, (data.confidence ?? 0) / 100);
-    return { description: text, confidence, tier: 'T2' };
-  } catch {
-    return null;
-  }
-}
-
-export const ocrAvailable = async () => Boolean(ocrEngine);
+export const ocrAvailable = async () => false;
 
 // ---------------------------------------------------------------------------
 // T3 — Gemini Nano, on-device. ABSENCE IS A NORMAL BRANCH, NOT AN ERROR.
