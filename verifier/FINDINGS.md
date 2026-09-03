@@ -127,3 +127,61 @@ Three ways to close it, all one line here:
 I would take the second — it is the only one where the injected label and the
 `lang` around it agree, which is the whole reason §5 exists — but it changes a
 fixture reference's meaning and that is the orchestrator's call.
+
+## 5. Fixed: the harness never installed the extension
+
+Not a disagreement — a defect, found while trying to explain why the merged
+stack still produced `null` for every candidate. Recorded here because it
+invalidates every red result any lane read before 2026-09-02.
+
+`launchWithExtension()` passed `--load-extension`. **Chrome ignores it.** The
+flag was removed from official Chrome-branded builds in Chrome 137 and Chrome
+accepts it silently. Measured on Chrome 152:
+
+| check | result |
+|---|---|
+| `--load-extension` on the command line (`chrome://version`) | present |
+| AriaWeave in `chrome://extensions-internals` | **absent** — only the component PDF viewer |
+| `ctx.serviceWorkers()` | empty |
+| content-script console output | none |
+| same tree in Playwright's bundled Chromium | loads, injects, works |
+
+So "the harness is red" meant "no extension was installed", for every lane, for
+the whole build. Fixed by `Extensions.loadUnpacked` over a browser-scoped CDP
+session, authorized by the orchestrator as a cross-lane edit. The quality rules,
+the fixtures and `launchClean()` were not touched.
+
+Two traps worth keeping, because both fail silently:
+
+- Playwright passes `--disable-extensions` by default. Leave it in and
+  `loadUnpacked` still returns an extension id while the extension does nothing.
+- The Extensions CDP domain is not available on a page-scoped session
+  (`Method not available`) and is pipe-only. Playwright already launches over a
+  pipe, so a browser-scoped session works with no extra flags.
+
+Full suite, all three lanes merged, after the fix: **31 passed, 11 failed.**
+
+## 6. `latency.spec.js` observes the wrong document, and always has
+
+Independent of everything above, and **not fixed** — Lane D's call, and outside
+what the orchestrator authorized.
+
+`tests/latency.spec.js:21-37` awaits `page.evaluate()` **before**
+`page.goto()`. The MutationObserver is therefore installed on `about:blank`,
+the evaluate blocks for `budget * 3` (9 s) until its own timeout resolves with
+`Infinity`, and only then does the navigation happen. The observer never sees
+the fixture's document at all.
+
+```js
+const elapsed = await page.evaluate(async (budget) => { /* observes about:blank */ });
+await page.goto(fixtureUrl('01-missing-alt.html'));   // ← too late
+expect(elapsed, 'no description ever appeared').toBeLessThan(Infinity);
+```
+
+`elapsed` is `Infinity` on every run no matter how fast the extension is, so
+this test cannot pass and its failure carries no information about latency. It
+needs `page.addInitScript()` to install the observer before navigation and stash
+the timestamp on a global the test reads after `goto`.
+
+Worth fixing before the demo: SPEC §6 criterion 4 is half latency, and right now
+nothing measures it.
