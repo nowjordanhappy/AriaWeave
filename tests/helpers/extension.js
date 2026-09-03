@@ -27,18 +27,45 @@ export function requireExtension() {
 
 // Real Chrome, headed. Chrome only loads unpacked extensions reliably in a
 // persistent context, and Nano lives in Chrome rather than Chromium.
+//
+// `--load-extension` is NOT used, because Chrome ignores it. The flag was
+// removed from official Chrome-branded builds in Chrome 137 — it was the usual
+// silent-sideload vector for malware — and Chrome accepts it on the command
+// line and does nothing, with no error and no warning. Measured on Chrome 152:
+// the flag appears in chrome://version, and chrome://extensions-internals lists
+// only the component PDF viewer. Every extension-dependent test in this harness
+// was therefore failing because no extension was ever installed.
+//
+// The supported replacement is the CDP method, which writes to Secure
+// Preferences exactly as "Load unpacked" in chrome://extensions does. Two
+// things it needs that are easy to miss:
+//
+//   - `ignoreDefaultArgs: ['--disable-extensions']`. Playwright passes
+//     `--disable-extensions` by default; leave it in and loadUnpacked still
+//     returns an extension id while the extension stays inert. That silence is
+//     the whole reason this took a bisect to find.
+//   - A *browser*-scoped CDP session. The Extensions domain is not on a page
+//     session (`Method not available`), and it is pipe-only — Playwright
+//     launches over a pipe already, so this works without extra flags.
+//
+// `--enable-unsafe-extension-debugging` is documented as gating the method but
+// was not required on Chrome 152. Passed anyway: cheap, and a version that does
+// enforce the gate would otherwise fail exactly as silently as the flag did.
 export async function launchWithExtension() {
   requireExtension();
-  return chromium.launchPersistentContext('', {
+  const ctx = await chromium.launchPersistentContext('', {
     channel: 'chrome',
     headless: false,
+    ignoreDefaultArgs: ['--disable-extensions'],
     args: [
-      `--disable-extensions-except=${EXTENSION_PATH}`,
-      `--load-extension=${EXTENSION_PATH}`,
+      '--enable-unsafe-extension-debugging',
       '--no-first-run',
       '--no-default-browser-check',
     ],
   });
+  const cdp = await ctx.browser().newBrowserCDPSession();
+  await cdp.send('Extensions.loadUnpacked', { path: EXTENSION_PATH });
+  return ctx;
 }
 
 // The "before" measurement: the same page with nothing installed.
