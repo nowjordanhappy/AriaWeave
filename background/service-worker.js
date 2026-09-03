@@ -26,20 +26,27 @@ const CONFIDENCE_FLOOR = 0.5;   // below this we say so honestly, never guess
 const TIER_FN = { T1, T2, T3, T4 };
 
 // ---------------------------------------------------------------------------
-// verifier — lane C owns verifier/. Loaded dynamically so this worker starts
-// with or without it; the fallback implements only the rules SPEC 3.4 states.
+// verifier — lane C owns verifier/.
+//
+// ESCALATED TO THE ORCHESTRATOR, and the reason is a platform limit rather than
+// a preference: an MV3 service worker forbids dynamic import() outright
+// ("import() is disallowed on ServiceWorkerGlobalScope", w3c/ServiceWorker#1356),
+// so the import list is fixed when the worker loads. Lane B cannot reach lane C
+// unless `verifier/index.js` exists at load time, and a static import of a file
+// that is not there kills the whole worker rather than one tier.
+//
+// An earlier version of this file did `await import('../verifier/index.js')`
+// inside a try/catch. That was worse than not trying: it threw every time and
+// swallowed it, so lane C's verifier would have been silently ignored forever
+// while the harness stayed green on the fallback's own judgement.
+//
+// Until a placeholder `verifier/index.js` lands the way content/ and background/
+// got theirs, the rules below stand in. Landing it is then a one-line change:
+//     import { verify as laneC } from '../verifier/index.js';
 // ---------------------------------------------------------------------------
 
-let verify;
-async function verifier() {
-  if (verify) return verify;
-  try {
-    const mod = await import('../verifier/index.js');
-    verify = mod.verify || mod.default;
-  } catch { /* not landed yet */ }
-  verify ||= fallbackVerify;
-  return verify;
-}
+const verify = fallbackVerify;
+const verifier = () => verify;
 
 const GENERIC = /^(image|imagen|photo|foto|picture|figura|figure|logo|icon|icono|banner|graphic|gr[áa]fico|thumbnail|miniatura|untitled|sin t[íi]tulo)\.?$/i;
 const HALLUCINATION = /\b(as an ai|no puedo|i cannot|i'm sorry|lo siento|unable to|no_lo_se)\b/i;
@@ -76,10 +83,11 @@ function matchesLang(text, lang) {
 // ---------------------------------------------------------------------------
 
 async function describe(candidate, lang, plan, image = null) {
-  const check = await verifier();
+  const check = verifier();
   let attempts = 0;
   let feedback = '';
   let best = null;
+  let ran = null;        // the last tier that actually executed, not merely planned
 
   for (const tier of plan.tiers) {
     if (attempts >= MAX_ATTEMPTS) break;
@@ -93,6 +101,7 @@ async function describe(candidate, lang, plan, image = null) {
     attempts++;
     const out = await TIER_FN[tier](candidate, lang, image || undefined, feedback);
     if (!out) continue;
+    ran = tier;
 
     const verdict = await check({ ...out, lang, kind: candidate.kind, candidate });
     if (verdict?.ok) return out;
@@ -107,6 +116,7 @@ async function describe(candidate, lang, plan, image = null) {
       const retry = await TIER_FN[tier](candidate, lang, image || undefined, feedback);
       attempts++;
       if (retry) {
+        ran = tier;
         const again = await check({ ...retry, lang, kind: candidate.kind, candidate });
         if (again?.ok) return retry;
         feedback = again?.reason || feedback;
@@ -116,10 +126,14 @@ async function describe(candidate, lang, plan, image = null) {
 
   // Nothing cleared the bar. Say so, in the page's language, rather than
   // shipping the least-bad guess: a wrong description is worse than none.
+  // `tier` is surfaced in inspection mode, so it names the tier that actually
+  // ran — never the most expensive one we merely planned for. Reporting "T4"
+  // for a page the cloud never touched would misread as money spent, and the
+  // one thing a demo cannot afford is a confident wrong label about cost.
   return {
     description: honestFallback(lang),
     confidence: best ? Math.min(best.confidence, CONFIDENCE_FLOOR - 0.01) : 0,
-    tier: best?.tier || plan.tiers[plan.tiers.length - 1],
+    tier: best?.tier || ran || 'none',
     fallback: true,
   };
 }
@@ -184,7 +198,7 @@ async function run(candidates, emit) {
     const lang = pickLang(candidate);
     const t1 = await T1(candidate, lang);
     if (t1) {
-      const check = await verifier();
+      const check = verifier();
       const verdict = await check({ ...t1, lang, kind: candidate.kind, candidate });
       if (verdict?.ok) {
         results.push(record(emit, { selector: candidate.selector, ...t1 }));

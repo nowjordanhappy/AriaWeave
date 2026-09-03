@@ -127,23 +127,22 @@ const humanise = (s) =>
 // needing an opt-in, OCR is what makes the free path produce anything but rules.
 // ---------------------------------------------------------------------------
 
-let ocrEngine;   // resolved once; `null` means "checked, absent"
-
-async function loadOcr() {
-  if (ocrEngine !== undefined) return ocrEngine;
-  try {
-    // Vendored, not bundled from a CDN: MV3 forbids remote code.
-    const mod = await import('./vendor/tesseract.js');
-    ocrEngine = mod.createWorker ? mod : null;
-  } catch {
-    ocrEngine = null;
-  }
-  return ocrEngine;
-}
+// The bundle is not vendored yet (orchestrator's call, deferred), so T2 is an
+// absent rung today — which SPEC 3.3 already treats as an ordinary branch.
+//
+// It CANNOT be loaded lazily when it does land. An MV3 service worker forbids
+// dynamic import() ("import() is disallowed on ServiceWorkerGlobalScope"), so
+// vendoring the bundle means a static import at the top of this file:
+//     import * as tesseract from './vendor/tesseract.js';
+//     const ocrEngine = tesseract;
+// and nothing else here changes. Writing it as a lazy load was a bug: it threw
+// every time and the catch hid it, so T2 would have reported itself absent even
+// with the bundle sitting right there.
+const ocrEngine = null;
 
 let ocrWorker;
 export async function T2(candidate, lang, image) {
-  const engine = await loadOcr();
+  const engine = ocrEngine;
   if (!engine || !image) return null;
 
   try {
@@ -160,7 +159,7 @@ export async function T2(candidate, lang, image) {
   }
 }
 
-export const ocrAvailable = () => loadOcr().then(Boolean);
+export const ocrAvailable = async () => Boolean(ocrEngine);
 
 // ---------------------------------------------------------------------------
 // T3 — Gemini Nano, on-device. ABSENCE IS A NORMAL BRANCH, NOT AN ERROR.
@@ -239,13 +238,23 @@ export async function T3(candidate, lang, image, feedback) {
 const API_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = 'claude-sonnet-4-5';
 
+// SPEC 2.2 says "cloud-tier API key via gitignored config". A gitignored MODULE
+// cannot work here: a service worker forbids dynamic import(), and a static
+// import of a file that is absent on every machine without a key would stop the
+// worker loading at all — taking the free tiers down with it.
+//
+// So the key lives in chrome.storage.local instead. Same gitignored-secret
+// property, no file, and one less way for a credential to reach the repo.
+// Flagged to the orchestrator as a deviation from the wording, not the intent.
+const KEY_SETTING = 'aw:cloud';
+
 let cloudConfig;   // null once checked and absent
 
 async function config() {
   if (cloudConfig !== undefined) return cloudConfig;
   try {
-    const mod = await import('../config.local.js');   // gitignored, hackathon-only
-    cloudConfig = mod.default?.apiKey ? mod.default : (mod.apiKey ? mod : null);
+    const stored = (await globalThis.chrome?.storage?.local.get(KEY_SETTING))?.[KEY_SETTING];
+    cloudConfig = stored?.apiKey ? stored : null;
   } catch {
     cloudConfig = null;
   }
