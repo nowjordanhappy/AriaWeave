@@ -68,6 +68,19 @@ export function isHonestFallback(text) {
 const ok = () => ({ ok: true });
 const no = (reason) => ({ ok: false, reason });
 
+// Two call shapes, because the background worker landed one before this module
+// existed: `check({ description, lang, kind, candidate })`. An MV3 service
+// worker forbids dynamic import(), so that call site is fixed at load time and
+// cannot adapt to us — we adapt to it. `verify(text, { lang })` stays the shape
+// the unit tests use. Extra fields (kind, candidate) are accepted and ignored;
+// no rule reads them today.
+function args(a, b) {
+  if (a && typeof a === 'object' && !Array.isArray(a)) {
+    return { text: a.description ?? a.text ?? null, ...b, lang: b?.lang ?? a.lang, langUndecided: b?.langUndecided ?? a.langUndecided };
+  }
+  return { text: a, ...b };
+}
+
 /**
  * The synchronous rules. Language is checked separately because the built-in
  * detector is async; `check()` runs both.
@@ -77,7 +90,8 @@ const no = (reason) => ({ ok: false, reason });
  *   quality bar (SPEC §2.2 asks for it) but it is not a description, so the
  *   retry loop keeps escalating instead of settling for it.
  */
-export function verify(text, { lang } = {}) {
+export function verify(input, opts) {
+  const { text, lang } = args(input, opts);
   if (text == null) return no('empty: the tier produced no text');
   const t = String(text).trim();
 
@@ -205,7 +219,8 @@ export async function detectPageLanguage(declared, sampleText) {
  * `langUndecided` suppresses the language rule only — every other rule stands.
  * Pass it from `detectPageLanguage().conflict`.
  */
-export async function check(text, { lang, langUndecided = false } = {}) {
+export async function check(input, opts) {
+  const { text, lang, langUndecided = false } = args(input, opts);
   const rules = verify(text, { lang });
   if (!rules.ok || rules.fallback) return rules;
   if (langUndecided) return { ok: true, langUndecided: true };

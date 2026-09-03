@@ -249,3 +249,23 @@ test('a language conflict stands the language rule down, and nothing else', asyn
   assert.equal((await check('imagen', { lang: 'en', langUndecided: true })).ok, false);
   assert.equal((await check('plaza.jpg', { lang: 'en', langUndecided: true })).ok, false);
 });
+
+// --- 6. the call shape the background worker already landed ------------------
+
+test('verify and check accept the worker call shape', async () => {
+  const good = 'Una plaza urbana con edificios a los lados y un árbol al centro';
+
+  // background/service-worker.js: await check({ ...out, lang, kind, candidate })
+  const pass = await check({ description: good, confidence: 0.8, lang: 'es', kind: 'img', candidate: {} });
+  assert.equal(pass.ok, true);
+
+  const fail = await check({ description: 'plaza.jpg', lang: 'es', kind: 'img', candidate: {} });
+  assert.equal(fail.ok, false);
+  assert.match(fail.reason, /filename/);          // the reason is the worker's feedback string
+
+  assert.equal(verify({ description: 'imagen', lang: 'es' }).ok, false);
+  assert.equal(verify(good, { lang: 'es' }).ok, true);        // the original shape still works
+
+  // An explicit second argument wins over the object's own field.
+  assert.equal((await check({ description: good, lang: 'en' }, { lang: 'es' })).ok, true);
+});
