@@ -41,8 +41,9 @@ they do not control. That distinction is the project.
 
 ### 2.2 Non-functional
 
-- **Zero configuration to be functional.** The free local tier works with
-  nothing set up: no account, no API key.
+- **Zero configuration to be functional.** The free path works with nothing set
+  up: no account, no API key. That floor is **T1 + T2 only** (see §3.3). T3 is
+  opportunistic and is not part of the promise.
 - Cloud-tier API key via gitignored config for the hackathon build. BYOK and a
   hosted proxy are roadmap, not build.
 - **A wrong description is worse than none.** On low confidence, emit honest
@@ -91,7 +92,7 @@ rule is decided by a rule.
 |---|---|---|---|
 | **T1** *free* | Heuristic rules | Filename alt, nearby caption text, `title`/`figcaption` reuse, decorative detection | Silent — falls through, never wrong |
 | **T2** *free* | Tesseract.js OCR | Text-heavy images: banners, scanned forms, infographics — very common on government sites | Garbage strings; the verifier catches them |
-| **T3** *free* | Gemini Nano, on-device | General image description with no key and no network | **May be entirely unavailable.** Absence is a normal path, not an error |
+| **T3** *free* | Gemini Nano, on-device | General image description with no key and no network | **Flag-gated today, so absent for ordinary users.** Absence is a normal path, not an error |
 | **T4** *paid* | Claude Sonnet, cloud | Whatever survives; batched per page, images resized to ≤1024px, structured JSON out | Costs money and latency — the thing the ladder exists to avoid |
 
 Escalation: each tier's output goes to the verifier. Only on rejection does the
@@ -110,6 +111,21 @@ Only one of them is T3.
   failure modes for zero demo value. T4 is Sonnet and stays Sonnet.
 - **The Translator and Language Detector APIs** — also built-in, on-device and
   free. Used here for *verification*, not generation.
+
+### 3.3.1 Nano is not zero-config today
+
+Enabling it currently requires Chrome flags — `#optimization-guide-on-device-model`,
+`#prompt-api-for-gemini-nano` and its multimodal variant — plus a manual
+multi-gigabyte model download. No general user will do that.
+
+**T3 therefore cannot be the free floor.** It is a bonus tier that becomes real
+when Chrome ships built-in AI to stable without flags. The zero-config promise
+in §2.2 rests entirely on T1 and T2, which ship inside the extension and need
+nothing at all.
+
+For the demo the flags are enabled on the dev machine, so T3 is shown working.
+**Say so out loud.** Claiming zero-config on-device vision is a claim a judge
+can check in thirty seconds.
 
 **T3 absence is a normal branch.** The hour-zero probe checks specifically
 whether the Prompt API accepts **image input** on the dev machine — text-only
@@ -223,11 +239,16 @@ Stated deliberately — pretending otherwise loses more than it gains.
 
 ### 7.1 Risk cut-line
 
-If the lanes slip: drop the Tesseract tier and route text-heavy images straight
-to T4; drop popup polish.
+If the lanes slip: drop popup polish, drop the per-item "report bad description"
+flag, and take the fixture corpus to the low end of the 8–12 range.
 
-**Never cut** the harness, the autonomous-loop evidence, or the SPEC and SYSTEM
-documents. Those are the graded surface.
+**Never cut** the harness, the autonomous-loop evidence, the SPEC and SYSTEM
+documents, or **T2**.
+
+T2 is not optional. With T3 flag-gated (§3.3.1), OCR is half of the entire
+zero-config promise; routing text-heavy images straight to T4 would leave the
+free path producing nothing but rule-based labels. An earlier draft of this
+cut-line said to drop Tesseract first — that would have quietly deleted §2.2.
 
 ---
 
