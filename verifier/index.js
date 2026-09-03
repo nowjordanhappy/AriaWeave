@@ -17,8 +17,8 @@ export const MAX_ATTEMPTS = 4;          // hard cap, SPEC §3.4. No exceptions.
 // Emitted deliberately when nothing clears the bar. Honest, and worth more than
 // a confident guess (SPEC §2.2). Not a description, so it never satisfies a tier.
 const FALLBACK = {
-  es: 'imagen no descrita con confianza',
-  en: 'image not described with confidence',
+  es: 'Imagen no descrita con confianza',
+  en: 'Image not described with confidence',
 };
 const FALLBACK_RE = /no descrit[ao] con confianza|not described with confidence/i;
 

@@ -37,16 +37,16 @@ const pageLang = () =>
 
 const GENERIC = {
   es: {
-    img: 'imagen no descrita con confianza',
-    button: 'botón sin nombre accesible',
-    link: 'enlace sin nombre accesible',
-    input: 'campo sin etiqueta',
+    img: 'Imagen no descrita con confianza',
+    button: 'Botón sin nombre accesible',
+    link: 'Enlace sin nombre accesible',
+    input: 'Campo sin etiqueta',
   },
   en: {
-    img: 'image not described with confidence',
-    button: 'button without accessible name',
-    link: 'link without accessible name',
-    input: 'field without label',
+    img: 'Image not described with confidence',
+    button: 'Button without accessible name',
+    link: 'Link without accessible name',
+    input: 'Field without label',
   },
 };
 
