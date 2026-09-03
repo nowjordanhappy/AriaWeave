@@ -1,5 +1,21 @@
 <!doctype html>
+<html lang="es">
 <meta charset="utf-8">
 <title>AriaWeave</title>
-<body style="width:320px;margin:0;padding:16px;font:14px system-ui">
-<p>Lane A owns this. Placeholder so the manifest resolves.</p>
+<link rel="stylesheet" href="popup.css">
+<body>
+<h1>AriaWeave</h1>
+
+<p class="row">
+  <input type="checkbox" id="enabled" checked>
+  <label for="enabled">Activar en las páginas que visito</label>
+</p>
+<p class="row">
+  <input type="checkbox" id="inspecting">
+  <label for="inspecting">Modo inspección (antes → después)</label>
+</p>
+
+<h2 id="count">Sin datos de esta pestaña</h2>
+<ul id="items" aria-labelledby="count"></ul>
+
+<script src="popup.js"></script>
