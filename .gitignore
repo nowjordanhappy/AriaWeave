@@ -1,0 +1,12 @@
+node_modules/
+.DS_Store
+
+# cloud tier credentials — never committed
+.env
+.env.*
+config.local.js
+
+# harness output
+test-results/
+playwright-report/
+tests/.cache/
