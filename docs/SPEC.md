@@ -127,6 +127,34 @@ For the demo the flags are enabled on the dev machine, so T3 is shown working.
 **Say so out loud.** Claiming zero-config on-device vision is a claim a judge
 can check in thirty seconds.
 
+### 3.3.2 First use needs a user gesture — measured 2026-09-02
+
+Confirmed on the dev machine (Chrome 152, M1 Pro, 16 GB): the `LanguageModel`
+API is present with **no flags required**, and both text and image input report
+`available`. A canvas-drawn test image was described correctly in **1968 ms**.
+
+Two facts the probe established that change how the extension must behave:
+
+1. **Chrome will not fetch the model without a user gesture.** While
+   availability is `downloadable`, `create()` throws `NotAllowedError`. This is
+   once per browser, not once per page — after the fetch, availability becomes
+   `available` and no gesture is ever needed again. It means AriaWeave cannot
+   silently enable T3 on a machine that lacks the model; a one-time opt-in
+   button is the only honest route, and the zero-config default stays T1 + T2.
+
+2. **The fetch is cheap when the component already exists.** Here it took ~30
+   seconds and ~20 MB of real disk, because the 4 GB model was already present
+   from other Chrome AI features and APFS cloned it. On a clean profile it is
+   several gigabytes. Do not state a figure to the user that has not been
+   measured on their machine.
+
+**Latency consequence, and it is the important one.** 1968 ms per image is fine
+for one image and unusable for twenty: a page processed serially would take
+forty seconds to finish. Lane B must not treat the tier ladder as a queue drained
+in DOM order. Visible-viewport candidates go first, off-screen work is deferred,
+and the latency budget in §2.2 is measured as time-to-first-visible-description,
+not time-to-page-complete.
+
 **T3 absence is a normal branch.** The hour-zero probe checks specifically
 whether the Prompt API accepts **image input** on the dev machine — text-only
 Nano cannot describe a picture. If image input is missing, T3 collapses and the
@@ -256,7 +284,7 @@ cut-line said to drop Tesseract first — that would have quietly deleted §2.2.
 
 | Question | Blocks | Owner |
 |---|---|---|
-| Does the Prompt API accept image input on the dev machine? | Whether T3 exists at all | Hour zero, before Lane D |
+| ~~Does the Prompt API accept image input on the dev machine?~~ | ~~Whether T3 exists at all~~ | **Answered 2026-09-02: yes, no flags, 1968 ms. See §3.3.2** |
 | Can the repo be published and continued after the competition? | Video language, roadmap | Organizers |
 | Any "AriaWeave" collision in the Chrome Web Store? | Name | 2-minute check |
 | What is the rule for a wrong `lang` attribute? | A verifier rule | Deliberately deferred until the corpus shows how it fails |
@@ -272,4 +300,5 @@ cut-line said to drop Tesseract first — that would have quietly deleted §2.2.
 | 2026-09-02 | **Zero configuration.** No settings page in the build. The free local tier is the default and engine choice is made by the router, never by the user. |
 | 2026-09-02 | **One paid model.** T4 is Sonnet; cloud Gemini is excluded. |
 | 2026-09-02 | **T3 absence is a normal path.** Built-in AI is Chrome-desktop-only and may be missing at runtime. |
+| 2026-09-02 | **T3 confirmed present on the dev machine** (§3.3.2), so the ladder stands as specced. But at ~2 s per image it cannot be drained in DOM order — viewport-first scheduling is now a Lane B requirement, not an optimisation. |
 | 2026-09-02 | **Language follows the page.** en and es are the tested scope, not the coded scope. Repo and docs in English; Spanish only as data. |

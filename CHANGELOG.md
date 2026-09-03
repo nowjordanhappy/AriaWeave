@@ -9,3 +9,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Project specification and orchestration plan (`docs/SPEC.md`, `docs/SYSTEM.md`).
+- Development log (`AI-DEV-LOG.md`), written incrementally.
