@@ -68,6 +68,45 @@ export async function launchWithExtension() {
   return ctx;
 }
 
+// The opt-in launcher for the model project.
+//
+// A throwaway profile has no on-device model components at all —
+// LanguageModel.availability() returns 'unavailable', not 'downloadable', so no
+// user gesture fixes it (verifier/FINDINGS.md finding 3). T3 therefore cannot
+// run in the default suite, by construction and not by accident.
+//
+// Point ARIAWEAVE_MODEL_PROFILE at a DEDICATED Chrome User Data directory that
+// has the model. Never the daily profile: Chrome holds a SingletonLock while it
+// runs, and Secure Preferences MACs are path-sensitive.
+export const MODEL_PROFILE = process.env.ARIAWEAVE_MODEL_PROFILE || null;
+
+export async function launchWithModelProfile() {
+  requireExtension();
+  if (!MODEL_PROFILE) {
+    throw new Error('ARIAWEAVE_MODEL_PROFILE is not set — this project needs a profile with the on-device model.');
+  }
+  const ctx = await chromium.launchPersistentContext(MODEL_PROFILE, {
+    channel: 'chrome',
+    headless: false,
+    ignoreDefaultArgs: ['--disable-extensions'],
+    args: ['--enable-unsafe-extension-debugging', '--no-first-run', '--no-default-browser-check'],
+  });
+  const cdp = await ctx.browser().newBrowserCDPSession();
+  await cdp.send('Extensions.loadUnpacked', { path: EXTENSION_PATH });
+  return ctx;
+}
+
+// The exact string the pipeline emits when nothing cleared the bar. Duplicated
+// from background/pipeline.js on purpose — the harness must not import what it
+// judges, and if the product changes this text the harness should fail loudly
+// rather than silently agree.
+export const HONEST_FALLBACK = [
+  'Imagen no descrita con confianza', 'Botón sin nombre accesible',
+  'Enlace sin nombre accesible', 'Campo sin etiqueta',
+  'Image not described with confidence', 'Button without accessible name',
+  'Link without accessible name', 'Field without label',
+];
+
 // The "before" measurement: the same page with nothing installed.
 export async function launchClean() {
   return chromium.launchPersistentContext('', {
@@ -77,7 +116,11 @@ export async function launchClean() {
   });
 }
 
-export const fixtureUrl = (name) => 'file://' + path.join(FIXTURES, name);
+// http, never file://. Under file:// each file is a unique opaque origin and
+// the worker's fetch() of an image src is blocked, so no image reaches any
+// tier and every element falls to the honest fallback with tier "none".
+export const PORT = Number(process.env.ARIAWEAVE_PORT || 5187);
+export const fixtureUrl = (name) => `http://localhost:${PORT}/${name}`;
 
 export function readExpectations() {
   return JSON.parse(fs.readFileSync(path.join(FIXTURES, 'expectations.json'), 'utf8'));
