@@ -114,18 +114,23 @@ Only one of them is T3.
 
 ### 3.3.1 Nano is not zero-config today
 
-Enabling it currently requires Chrome flags — `#optimization-guide-on-device-model`,
-`#prompt-api-for-gemini-nano` and its multimodal variant — plus a manual
-multi-gigabyte model download. No general user will do that.
+An earlier draft of this section said Nano required three Chrome flags. **That
+was wrong**, and the probe (§3.3.2) disproved it: on Chrome 152 the API has
+shipped to stable and no flags exist to enable. The flag names in that draft
+returned nothing at all when searched.
 
-**T3 therefore cannot be the free floor.** It is a bonus tier that becomes real
-when Chrome ships built-in AI to stable without flags. The zero-config promise
-in §2.2 rests entirely on T1 and T2, which ship inside the extension and need
-nothing at all.
+The conclusion survives on different grounds. What Nano actually requires is
+that the model be present, and fetching it needs a **one-time user gesture** —
+Chrome will not pull gigabytes for a script nobody clicked. So the extension
+cannot silently turn T3 on for someone who does not already have the model.
 
-For the demo the flags are enabled on the dev machine, so T3 is shown working.
-**Say so out loud.** Claiming zero-config on-device vision is a claim a judge
-can check in thirty seconds.
+**T3 therefore cannot be the free floor.** The zero-config promise in §2.2
+rests entirely on T1 and T2, which ship inside the extension and need nothing
+at all. A one-time opt-in button is the only honest way to offer T3: opt-in is
+not configuration, but a silent multi-gigabyte fetch would be worse than either.
+
+Say so during the demo. Claiming zero-config on-device vision is a claim a
+judge can check in thirty seconds — and on a clean machine it would fail.
 
 ### 3.3.2 First use needs a user gesture — measured 2026-09-02
 
