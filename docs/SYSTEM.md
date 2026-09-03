@@ -72,8 +72,37 @@ and judging output.
 - Quality and similarity scoring against the labeled reference descriptions.
 - Latency and idempotency tests.
 
-Everything fails at handoff. **That is the deliverable** — a lane with nothing
-to loop against is a lane writing code nobody is checking.
+### 3.2 Almost everything fails at handoff — but not quite everything
+
+The plan said "all red". Building it showed that one group must be green: the
+**corpus self-check**, which runs each fixture through axe with no extension
+installed and asserts the planted violations are actually there. It passes at
+handoff (9 fixtures, 19 violations, confirmed).
+
+That green is what makes the red meaningful. Without it, a fixture that
+silently lost its planted `<img>` would report zero violations after the
+extension ran, and the harness would certify success on an empty page. The
+corpus check tests Lane D's own work; everything about the extension is red.
+
+Every extension-dependent test fails with the same deliberate message rather
+than a launch stack trace:
+
+```
+No manifest.json at /Volumes/DATOS/Projects/AriaWeave.
+The harness is red because the extension does not exist yet. That is the
+expected state until lanes A and B land.
+```
+
+A lane must never have to debug the harness to find out whether the failure is
+its own.
+
+### 3.3 The harness drives Chrome, not Chromium
+
+`channel: 'chrome'` is set deliberately. Gemini Nano is a Chrome browser
+component and Playwright's bundled Chromium does not have it, so the default
+setup would make T3 permanently untestable — and the failure would look like a
+model bug rather than a harness choice. It also means no browser download:
+`npm i` installs three packages and nothing else.
 
 ---
 

@@ -1,0 +1,19 @@
+{
+  "name": "ariaweave",
+  "version": "0.0.0",
+  "description": "Chrome extension that injects real alt/aria-label attributes into the live DOM",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "report": "playwright show-report"
+  },
+  "type": "module",
+  "private": "true",
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.62.1",
+    "axe-core": "^4.13.0"
+  }
+}
