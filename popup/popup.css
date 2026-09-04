@@ -27,3 +27,11 @@ button.report {
   cursor: pointer;
 }
 button.report[aria-pressed="true"] { background: #111; color: #fff; }
+
+/* The element identifier doubles as a control: click it and the page points at
+   the element. Focusable, because a popup for an accessibility tool that cannot
+   be driven by keyboard would be self-refuting. */
+[role="button"].what { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+[role="button"].what:hover { color: #b0452f; }
+[role="button"].what:focus-visible { outline: 2px solid #2f3e9e; outline-offset: 2px; border-radius: 2px; }
+[role="button"].what[data-gone="1"]::after { content: " — ya no está en la página"; opacity: .7; font-style: italic; }

@@ -26,3 +26,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the current tab, and a per-item flag for a bad description.
 - Inspection mode: an on-page overlay showing before → after and the tier that
   produced each description. Off by default.
+- Click any entry in the popup and the page scrolls to that element and flashes
+  a ring around it. Keyboard-operable, and it says so when the element is gone.

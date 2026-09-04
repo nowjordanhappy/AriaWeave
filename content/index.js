@@ -481,9 +481,45 @@ function stop() {
   renderInspector(false);
 }
 
+// Show me which one you mean.
+//
+// A selector like `div:nth-of-type(2) > div:nth-of-type(3) > a:nth-of-type(1)`
+// is an address by position, and nobody reads it. Rather than make it prettier,
+// let the page answer: scroll the element into view and flash a ring around it.
+// The ring is drawn with an outline on a data-ariaweave-ui element so the
+// observer ignores it and it cannot re-enter the scan.
+function reveal(selector) {
+  let el;
+  try { el = document.querySelector(selector); } catch { return false; }
+  if (!el) return false;
+
+  el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+
+  const r = el.getBoundingClientRect();
+  const ring = document.createElement('div');
+  ring.setAttribute('data-ariaweave-ui', '');
+  ring.setAttribute('aria-hidden', 'true');
+  Object.assign(ring.style, {
+    position: 'fixed',
+    left: `${r.left - 4}px`, top: `${r.top - 4}px`,
+    width: `${r.width + 8}px`, height: `${r.height + 8}px`,
+    border: '3px solid #b0452f', borderRadius: '4px',
+    boxShadow: '0 0 0 3px rgba(255,255,255,.9)',
+    pointerEvents: 'none', zIndex: '2147483647',
+    transition: 'opacity .3s ease', opacity: '1',
+  });
+  document.body.appendChild(ring);
+  setTimeout(() => { ring.style.opacity = '0'; }, 1400);
+  setTimeout(() => ring.remove(), 1800);
+  return true;
+}
+
 chrome.runtime.onMessage.addListener((msg, _sender, respond) => {
   if (msg?.type === 'ariaweave:state') {
     respond({ enabled, inspecting, records });
+  }
+  if (msg?.type === 'ariaweave:reveal') {
+    respond({ found: reveal(msg.selector) });
   }
 });
 

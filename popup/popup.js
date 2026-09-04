@@ -34,6 +34,25 @@ function describeItem(r) {
   before.style.margin = '2px 0 0';
   before.textContent = `Antes: ${r.before === null ? 'sin atributo' : r.before || '(vacío)'}`;
 
+  // The selector is an implementation detail that leaked into the UI. Clicking
+  // the row asks the page to point at the element instead of asking the reader
+  // to decode a path of nth-of-type steps.
+  what.title = r.selector;
+  what.setAttribute('role', 'button');
+  what.setAttribute('tabindex', '0');
+  const reveal = async () => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) return;
+    const res = await chrome.tabs.sendMessage(tab.id, {
+      type: 'ariaweave:reveal', selector: r.selector,
+    }).catch(() => null);
+    what.dataset.gone = res?.found ? '' : '1';
+  };
+  what.addEventListener('click', reveal);
+  what.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); reveal(); }
+  });
+
   li.append(what, tier, after, before);
 
   if (r.after !== '') {
