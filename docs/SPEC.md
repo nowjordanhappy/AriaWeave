@@ -341,13 +341,38 @@ Stated deliberately — pretending otherwise loses more than it gains.
 If the lanes slip: drop popup polish, drop the per-item "report bad description"
 flag, and take the fixture corpus to the low end of the 8–12 range.
 
-**Never cut** the harness, the autonomous-loop evidence, the SPEC and SYSTEM
-documents, or **T2**.
+**Never cut** the harness, the autonomous-loop evidence, or the SPEC and SYSTEM
+documents.
 
-T2 is not optional. With T3 flag-gated (§3.3.1), OCR is half of the entire
-zero-config promise; routing text-heavy images straight to T4 would leave the
-free path producing nothing but rule-based labels. An earlier draft of this
-cut-line said to drop Tesseract first — that would have quietly deleted §2.2.
+**Reversed 2026-09-03: T2 moves to roadmap, and it is a real narrowing.**
+
+This section said T2 was uncuttable. That was reasoned when it looked as though
+T3 might not exist at all. It exists, and measurement rather than argument
+settled the rest: handed `09-text-heavy.html`, whose entire meaning is text
+burned into a PNG, T3 returned
+
+> "La imagen muestra la página web de la Municipalidad Distrital indicando
+> atención al público de 8 a 16 horas, Ventanilla 3 - Mesa de Partes."
+
+Every word that matters, which is what OCR was for. Shipping Tesseract means
+vendoring the WASM core plus Spanish training data — the extension goes from
+about 100 KB to somewhere between 8 and 20 MB, re-downloaded on every update —
+to duplicate a capability the machine already has.
+
+**What this costs, stated plainly rather than buried.** On a machine that has
+never opted into the on-device model, the free path is now T1 alone. AriaWeave
+still silences decorative images and names controls from their context, `href`
+and icon markup — which is most of what a real page gets wrong — but **it
+cannot describe a photograph, and it cannot read text out of a banner.** The
+zero-config promise in §2.2 narrows to structure and controls; images need
+either the one-time opt-in or a key.
+
+That is a smaller promise than the one this document opened with. It is written
+here rather than quietly dropped, because a spec that hides where it retreated
+teaches nobody which of its claims survived contact.
+
+If the size ever stops mattering — a hosted proxy, a smaller model, an OCR API
+in the browser — T2 goes back in, and the ladder already has the rung.
 
 ---
 

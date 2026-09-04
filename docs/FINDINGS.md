@@ -111,7 +111,18 @@ to `tests/`.
 
 ---
 
-## 4 — T2 is a stub
+## 4 — CLOSED 2026-09-03 — T2 dropped to roadmap after measurement
+
+> T3 was handed `09-text-heavy.html`, whose whole meaning is text burned into a
+> PNG, and returned "atención al público de 8 a 16 horas, Ventanilla 3 - Mesa de
+> Partes" — every word that mattered. Shipping Tesseract would have added 8-20 MB
+> to duplicate a capability the machine already has.
+>
+> The cost is stated in SPEC §7.1 rather than buried: on a machine that never
+> opted into the model, the free path is T1 alone, so structure and controls are
+> fixed and images are not.
+
+### Original entry — T2 is a stub
 
 **Lane B.** The one tier that could carry criterion 2's similarity slice in a
 clean profile, for free and with no key. SPEC §7.1 says it is never cut. It is

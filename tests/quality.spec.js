@@ -107,15 +107,6 @@ test.describe('descriptions are worth having', () => {
     });
   }
 
-  test('09-text-heavy.html — the OCR tier handles it, not the paid one', async () => {
-    const page = await ctx.newPage();
-    await page.goto(fixtureUrl('09-text-heavy.html'));
-    await settleFor(page, Object.keys(EXPECT['09-text-heavy.html'].candidates), 8000);
-    const got = await namesById(page);
-    expect(got.horario?.tier, 'text-heavy image should route to T2, not escalate')
-      .toBe('T2');
-    await page.close();
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -152,4 +143,32 @@ test.describe('descriptions resemble the human references @needs-model', () => {
       await page.close();
     });
   }
+});
+
+// Text burned into an image is only recoverable by a tier that can see it. T2
+// (OCR) was dropped after measurement showed T3 already returns the words —
+// see SPEC §7.1 — so the assertion is now about the OUTCOME rather than which
+// rung produced it: the description must contain what the banner says, not
+// merely describe that a banner exists.
+test.describe('text in images is transcribed, not just described @needs-model', () => {
+  let ctx;
+  test.beforeAll(async () => { ctx = await launchWithModelProfile(); });
+  test.afterAll(async () => { await ctx?.close(); });
+
+  test('09-text-heavy.html — the banner\'s words survive into the alt', async () => {
+    const page = await ctx.newPage();
+    await page.goto(fixtureUrl('09-text-heavy.html'));
+    await settleFor(page, ['horario'], 12000);
+    const got = await namesById(page);
+    const alt = (got.horario?.name || '').toLowerCase();
+
+    // The facts a reader needs off that banner. Not the exact phrasing — a
+    // model rewords, and demanding the wording would test the model rather
+    // than whether the information arrived.
+    for (const fact of ['16', 'ventanilla', 'mesa de partes']) {
+      expect(alt, `#horario (tier ${got.horario?.tier}) lost "${fact}": "${got.horario?.name}"`)
+        .toContain(fact);
+    }
+    await page.close();
+  });
 });
