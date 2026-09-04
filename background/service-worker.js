@@ -21,6 +21,8 @@ import {
 
 const CONCURRENCY = 2;          // two Nano sessions is the memory a laptop spares
 const MAX_ATTEMPTS = 4;         // hard cap: the retry loop cannot spin (SPEC 3.4)
+import { verify as laneCVerify } from '../verifier/index.js';
+
 const CONFIDENCE_FLOOR = 0.5;   // below this we say so honestly, never guess
 
 const TIER_FN = { T1, T2, T3, T4 };
@@ -45,7 +47,15 @@ const TIER_FN = { T1, T2, T3, T4 };
 //     import { verify as laneC } from '../verifier/index.js';
 // ---------------------------------------------------------------------------
 
-const verify = fallbackVerify;
+// WIRED 2026-09-03. The placeholder lane B was waiting for now exists, so the
+// one-line change it described is done: lane C's verifier is the arbiter and
+// fallbackVerify below is dead weight kept only for background/selfcheck.js,
+// which must be runnable without lane C present.
+//
+// This sat unwired through a merge. Nothing failed loudly — lane B's own rules
+// stood in and the harness stayed green on them, which is exactly the shape of
+// bug an integration seam produces: both sides correct, the wire absent.
+const verify = laneCVerify;
 const verifier = () => verify;
 
 const GENERIC = /^(image|imagen|photo|foto|picture|figura|figure|logo|icon|icono|banner|graphic|gr[áa]fico|thumbnail|miniatura|untitled|sin t[íi]tulo)\.?$/i;

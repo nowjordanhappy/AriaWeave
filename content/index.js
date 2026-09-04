@@ -84,12 +84,24 @@ function labelledByText(el) {
 
 // A cheap approximation of the accessible name. It only has to be right about
 // "is there one at all", which is the same question axe's *-name rules ask.
+// Content inside an aria-hidden subtree is NOT an accessible name: assistive
+// tech never sees it. An icon-only button whose <svg aria-hidden="true"> holds
+// a <title> reads as named here while a screen reader announces nothing — and
+// axe correctly flags it, so the scanner disagreeing with axe means the element
+// is silently never offered a name. The same blind spot existed in the harness.
+function visibleClone(el) {
+  const c = el.cloneNode(true);
+  for (const h of c.querySelectorAll('[aria-hidden="true"]')) h.remove();
+  return c;
+}
+
 function hasAccessibleName(el) {
   if (el.getAttribute('aria-label')?.trim()) return true;
   if (labelledByText(el)) return true;
   if (el.getAttribute('title')?.trim()) return true;
-  if (text(el)) return true;
-  if (el.querySelector('img[alt]:not([alt=""]), svg > title, [aria-label]')) return true;
+  const visible = visibleClone(el);
+  if (text(visible)) return true;
+  if (visible.querySelector('img[alt]:not([alt=""]), svg > title, [aria-label]')) return true;
   return false;
 }
 
@@ -169,6 +181,18 @@ function nearbyText(el) {
     .slice(0, 300);
 }
 
+// Text sitting immediately before a field, which is what an author writes when
+// they skip the <label> element: a <p>, a <span>, a bare text node.
+function precedingText(el) {
+  let n = el.previousElementSibling;
+  for (let hops = 0; n && hops < 2; hops++, n = n.previousElementSibling) {
+    if (/^(input|select|textarea|button|form)$/i.test(n.tagName)) break;
+    const t = text(n);
+    if (t) return t;
+  }
+  return '';
+}
+
 function contextFor(el, kind) {
   const ctx = { lang: pageLang(), tag: el.tagName.toLowerCase() };
   const title = el.getAttribute('title')?.trim();
@@ -185,15 +209,38 @@ function contextFor(el, kind) {
   }
 
   if (kind === 'input') {
-    ctx.type = el.type || 'text';
-    if (el.name) ctx.name = el.name;
+    // SPEC §4.1: `inputName`, never `name`. The old key collided with the
+    // router's reading of `name` as the *accessible* name, so every named input
+    // looked already-labelled and was skipped before T1 ran.
+    ctx.inputType = el.type || 'text';
+    if (el.name) ctx.inputName = el.name;
     if (el.placeholder) ctx.placeholder = el.placeholder;
+    const before = precedingText(el);
+    if (before) ctx.preceding = before;
   }
 
   if (kind === 'link') {
     const href = el.getAttribute('href');
     if (href) ctx.href = href;
   }
+
+  if (kind === 'button' || kind === 'link') {
+    // Markup, not pixels: class tokens, <use href="#icon-close"> and a nested
+    // <title> are text the author wrote. Capped so a sprite sheet cannot ride
+    // along into the message.
+    const svg = el.querySelector('svg');
+    if (svg) ctx.svg = svg.outerHTML.slice(0, 2048);
+  }
+
+  const labelledBy = [el.getAttribute('aria-labelledby'), el.getAttribute('aria-describedby')]
+    .filter(Boolean).join(' ').split(/\s+/).filter(Boolean)
+    .map((id) => document.getElementById(id)).filter(Boolean)
+    .map((n) => text(n)).filter(Boolean).join(' ');
+  if (labelledBy) ctx.labelledBy = labelledBy;
+
+  const role = el.getAttribute('role');
+  if (role) ctx.role = role;
+  if (el.getAttribute('aria-hidden') === 'true') ctx.ariaHidden = true;
 
   const heading = nearestHeading(el);
   if (heading) ctx.heading = heading;

@@ -133,10 +133,19 @@ export async function namesById(page) {
     for (const el of document.querySelectorAll('[id]')) {
       const tag = el.tagName.toLowerCase();
       let name = null;
-      if (tag === 'img') name = el.getAttribute('alt');
-      else name = el.getAttribute('aria-label')
-               ?? el.getAttribute('title')
-               ?? ((el.textContent || '').trim() || null);
+      if (tag === 'img') {
+        name = el.getAttribute('alt');
+      } else {
+        // Text inside an aria-hidden subtree is NOT an accessible name. An
+        // icon-only button whose <svg aria-hidden="true"> contains a <title>
+        // reads as named here while assistive tech sees nothing — the harness
+        // reported "Buscar" for a button carrying no aria-label at all.
+        const visible = el.cloneNode(true);
+        for (const h of visible.querySelectorAll('[aria-hidden="true"]')) h.remove();
+        name = el.getAttribute('aria-label')
+            ?? el.getAttribute('title')
+            ?? ((visible.textContent || '').trim() || null);
+      }
       acc[el.id] = {
         tag,
         name,

@@ -38,35 +38,37 @@ export function isJunkName(name) {
 export function readContext(candidate) {
   const c = candidate?.context;
   const ctx = (c && typeof c === 'object') ? c : {};
-  const text = typeof c === 'string' ? c : '';
-  const pick = (...keys) => {
-    for (const k of keys) {
-      const v = ctx[k];
-      if (typeof v === 'string' && v.trim()) return v.trim();
-    }
-    return '';
-  };
+  const str = (k) => (typeof ctx[k] === 'string' && ctx[k].trim()) ? ctx[k].trim() : '';
+
+  // SPEC §4.1 lists these keys. The synonym lists that used to live here read
+  // `name` as the accessible name while lane A sent it as the input's `name`
+  // attribute, so every named input was skipped before T1 ran. A defensive
+  // reader is how that drift stayed invisible for a whole build — an unknown
+  // key is now a contract violation to report, not a shape to guess at.
   return {
-    lang: pick('lang', 'documentLang', 'pageLang'),
-    name: pick('name', 'accessibleName', 'alt', 'ariaLabel', 'aria-label'),
-    title: pick('title'),
-    figcaption: pick('figcaption', 'caption'),
-    labelledBy: pick('labelledBy', 'ariaLabelledBy', 'labelledByText'),
-    nearby: pick('nearby', 'nearbyText', 'surroundingText', 'context') || text,
-    preceding: pick('preceding', 'precedingText', 'labelText', 'previousText'),
-    heading: pick('heading', 'sectionHeading', 'nearestHeading'),
-    placeholder: pick('placeholder'),
-    attrName: pick('attrName', 'inputName', 'fieldName'),
-    inputType: pick('inputType', 'type'),
-    href: pick('href', 'url'),
-    role: pick('role'),
-    svg: pick('svg', 'svgMarkup', 'outerHTML', 'html'),
-    dataUrl: pick('dataUrl', 'dataURL', 'imageData'),
-    pageText: pick('pageText', 'documentText', 'bodyText'),
-    hidden: ctx.ariaHidden === true || ctx.hidden === true || pick('ariaHidden') === 'true',
-    presentation: /^(presentation|none)$/i.test(pick('role')),
+    lang: str('lang'),
+    tag: str('tag'),
+    heading: str('heading'),
+    nearby: str('nearby') || (typeof c === 'string' ? c.trim() : ''),
+    preceding: str('preceding'),
+    labelledBy: str('labelledBy'),
+    title: str('title'),
+    role: str('role'),
+    junkAlt: str('junkAlt'),
+    filename: str('filename'),
+    figcaption: str('caption'),
+    href: str('href'),
+    inputType: str('inputType'),
+    attrName: str('inputName'),
+    placeholder: str('placeholder'),
+    svg: str('svg'),
+    dataUrl: str('dataUrl'),
+    pageText: str('pageText'),
+    hidden: ctx.ariaHidden === true,
+    presentation: /^(presentation|none)$/i.test(str('role')),
   };
 }
+
 
 const box = (candidate) => {
   const b = candidate?.bbox || {};
@@ -114,8 +116,13 @@ function isTextHeavy(candidate) {
 export function route(candidate) {
   const ctx = readContext(candidate);
 
-  if (!isJunkName(ctx.name)) {
-    return { action: 'skip', reason: 'already has a usable accessible name' };
+  // Only an image can arrive already named-but-badly: lane A sends it with the
+  // useless alt in `junkAlt`. Controls arrive precisely because the scanner
+  // found no accessible name, so re-deciding that here is second-guessing the
+  // one side that can actually see the DOM — and reading the wrong key while
+  // doing it is what skipped every named input before T1 ran (SPEC §4.1).
+  if (candidate.kind === 'img' && ctx.junkAlt && !isJunkName(ctx.junkAlt)) {
+    return { action: 'skip', reason: 'existing alt is already usable' };
   }
   if (isDecorative(candidate, ctx)) {
     return { action: 'silence', reason: 'decorative: too small, hidden, or a known spacer' };

@@ -64,6 +64,29 @@ const CONTROL_VERB = {
   en: { pdf: (n) => `Download the ${n} as a PDF`, download: 'Download the file' },
 };
 
+// Hostnames that name themselves. A social icon's only signal is where it goes.
+const KNOWN_HOSTS = {
+  'facebook.com': 'Facebook', 'twitter.com': 'Twitter', 'x.com': 'X',
+  'instagram.com': 'Instagram', 'youtube.com': 'YouTube', 'linkedin.com': 'LinkedIn',
+  'tiktok.com': 'TikTok', 'whatsapp.com': 'WhatsApp', 'wa.me': 'WhatsApp',
+};
+
+// Icon class and id tokens authors actually write. Text, not geometry: reading
+// `class="icon-search"` is reuse of a word the author chose, while guessing
+// "Guardar" from a floppy-disk outline is the confident-wrong answer §2.2 bans.
+const ICON_TOKEN = {
+  es: { search: 'Buscar', close: 'Cerrar', menu: 'Menú', save: 'Guardar',
+        delete: 'Eliminar', trash: 'Eliminar', edit: 'Editar', print: 'Imprimir',
+        share: 'Compartir', download: 'Descargar', home: 'Inicio', user: 'Cuenta',
+        cart: 'Carrito', mail: 'Correo', phone: 'Teléfono', settings: 'Ajustes' },
+  en: { search: 'Search', close: 'Close', menu: 'Menu', save: 'Save',
+        delete: 'Delete', trash: 'Delete', edit: 'Edit', print: 'Print',
+        share: 'Share', download: 'Download', home: 'Home', user: 'Account',
+        cart: 'Cart', mail: 'Mail', phone: 'Phone', settings: 'Settings' },
+};
+
+const LINK_TO = { es: (n) => `Ir a ${n}`, en: (n) => `Go to ${n}` };
+
 const INPUT_BY_TYPE = {
   es: { email: 'Correo electrónico', tel: 'Número de teléfono', search: 'Buscar en el sitio',
         password: 'Contraseña', url: 'Dirección web' },
@@ -73,9 +96,14 @@ const INPUT_BY_TYPE = {
 
 const clean = (s) => String(s).replace(/\s+/g, ' ').trim().slice(0, MAX_LENGTH);
 
-const usable = (s) => {
+// A control label is legitimately short — "Buscar", "Cerrar" — while an image
+// description that short has said nothing. One floor for both silently discarded
+// every correct short answer T1 could produce for a control.
+const MIN_USABLE = { img: 8, button: 3, link: 3, input: 3 };
+
+const usable = (s, kind = 'img') => {
   const t = clean(s || '');
-  return t.length >= 8 && !isJunkName(t) ? t : null;
+  return t.length >= (MIN_USABLE[kind] ?? 8) && !isJunkName(t) ? t : null;
 };
 
 export async function T1(candidate, lang) {
@@ -84,17 +112,22 @@ export async function T1(candidate, lang) {
 
   // Text already written for a human, reused rather than invented. Ordered by
   // how deliberately an author wrote it for this element.
-  for (const source of [ctx.figcaption, ctx.labelledBy, ctx.title]) {
-    const t = usable(source);
+  // Text an author wrote for this element, reused rather than invented. A
+  // <title> inside the icon's own SVG belongs here: it is authored text, and it
+  // is usually invisible to assistive tech because the svg is aria-hidden —
+  // exactly the case worth rescuing.
+  const svgTitle = /<title[^>]*>([^<]+)<\/title>/i.exec(ctx.svg || '')?.[1];
+  for (const source of [ctx.figcaption, ctx.labelledBy, ctx.title, svgTitle]) {
+    const t = usable(source, candidate.kind);
     if (t) return { description: t, confidence: 0.9, tier: 'T1' };
   }
 
   if (candidate.kind === 'input') {
-    const t = usable(ctx.preceding) || usable(ctx.placeholder);
+    const t = usable(ctx.preceding, 'input') || usable(ctx.placeholder, 'input');
     if (t) return { description: t, confidence: 0.85, tier: 'T1' };
     const byType = INPUT_BY_TYPE[l]?.[ctx.inputType];
     if (byType) return { description: byType, confidence: 0.7, tier: 'T1' };
-    const humanised = usable(humanise(ctx.attrName));
+    const humanised = usable(humanise(ctx.attrName), 'input');
     if (humanised) return { description: humanised, confidence: 0.6, tier: 'T1' };
   }
 
@@ -108,8 +141,38 @@ export async function T1(candidate, lang) {
       const t = usable(CONTROL_VERB[l]?.pdf?.(stem.toLowerCase()));
       if (t) return { description: t, confidence: 0.8, tier: 'T1' };
     }
-    const t = usable(ctx.nearby);
+    // A hostname names itself: a social icon's only signal is where it goes.
+    const host = /^https?:\/\/([^/?#]+)/i.exec(href)?.[1]?.replace(/^www\./, '');
+    const known = host && KNOWN_HOSTS[host.toLowerCase()];
+    if (known) {
+      const t = usable(LINK_TO[l]?.(known), 'link');
+      if (t) return { description: t, confidence: 0.7, tier: 'T1' };
+    }
+
+    // The path itself is words an author chose: /contacto, /mesa-de-partes.
+    // Only for same-site paths — an opaque id or a tracking query says nothing.
+    const path = /^\/([a-z0-9][a-z0-9\-_/]*)$/i.exec(href.split(/[?#]/)[0])?.[1];
+    if (path && !/^\d+$/.test(path)) {
+      const stem = path.split('/').filter(Boolean).pop() || '';
+      const t = usable(humanise(stem), 'link');
+      if (t) return { description: t, confidence: 0.65, tier: 'T1' };
+    }
+
+    const t = usable(ctx.nearby, 'link');
     if (t) return { description: t, confidence: 0.55, tier: 'T1' };
+  }
+
+  // Icon tokens the author wrote: class="icon-search", <use href="#icon-close">.
+  // Words, never path geometry — see the note below.
+  if (candidate.kind === 'button' || candidate.kind === 'link') {
+    const tokens = `${ctx.svg} ${ctx.tag}`.toLowerCase().match(/[a-z]{3,}/g) || [];
+    for (const tok of tokens) {
+      const word = ICON_TOKEN[l]?.[tok];
+      if (word) {
+        const t = usable(word, candidate.kind);
+        if (t) return { description: t, confidence: 0.6, tier: 'T1' };
+      }
+    }
   }
 
   // Deliberately no rule for icon buttons: an SVG path is not text, and guessing
