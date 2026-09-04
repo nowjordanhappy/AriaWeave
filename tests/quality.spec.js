@@ -38,6 +38,7 @@ test.describe('descriptions are worth having', () => {
 
         const issues = qualityIssues(actual.name, {
           lang: spec.langUndecided ? null : spec.lang,
+          kind: want.kind,
         });
         expect(issues, `#${id} → "${actual.name}"`).toEqual([]);
       }
@@ -63,6 +64,18 @@ test.describe('descriptions are worth having', () => {
         const tier = actual?.tier;
 
         if (!tier || tier === 'none') {
+          // The honest floor is a floor for IMAGES ONLY, and only because a
+          // clean profile has no on-device model. A control is different: no
+          // vision tier applies to a link, a button or an input, so their names
+          // must come from context alone — free, no model, no network. Falling
+          // to the generic there is a routing or heuristic failure, not an
+          // honest limit, and accepting it is how this harness certified the
+          // `context.name` collision as a pass (docs/FINDINGS.md finding 2).
+          expect(want.kind,
+            `#${id} produced no tier and fell to "${actual?.name}". A ${want.kind} `
+            + `has no vision path, so it must be named from context by T1.`)
+            .toBe('img');
+
           // Language is deliberately not asserted here: fixture 08 declares a
           // lang that contradicts its content and SPEC 5 defers that rule.
           expect(HONEST_FALLBACK,

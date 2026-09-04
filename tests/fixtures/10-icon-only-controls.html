@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<title>Pie de página municipal</title>
+<h1>Municipalidad</h1>
+<!-- Controls whose ONLY signal is the href or the icon markup. No adjacent
+     heading, no nearby prose, nothing T1 can read from the surrounding text.
+     Fixture 03 passes because its buttons sit next to headings — this one is
+     what the real web looks like, and it has no vision path at all: an <a> is
+     not an image, so T2, T3 and T4 never apply. Everything here must be
+     nameable from context alone, for free. -->
+<footer>
+  <nav>
+    <a id="contacto" href="/contacto">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 7l8 6 8-6" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+    </a>
+    <a id="informe" href="/documentos/informe-anual-2026.pdf">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+    </a>
+    <a id="facebook" href="https://www.facebook.com/munilima">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+    </a>
+    <button id="buscar" type="button" class="icon-search">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><title>Buscar</title><circle cx="10" cy="10" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15 15l5 5" stroke="currentColor" stroke-width="2"/></svg>
+    </button>
+  </nav>
+</footer>

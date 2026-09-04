@@ -18,21 +18,26 @@ const GENERIC = [
 // as a quality failure — but it is also not a description, so it is counted.
 const HONEST_FALLBACK = /no descrit[ao] con confianza|not described with confidence/i;
 
-const MIN_LENGTH = 8;
+// A control label is legitimately short — "Buscar", "Guardar", "Cerrar" — while
+// an image description that short has said nothing. One floor for both rejected
+// the harness's own reference ("Guardar", 7) and rejected a correct product
+// answer ("Buscar", 6, read from a nested <title> in the icon's SVG).
+const MIN_LENGTH = { img: 8, button: 3, link: 3, input: 3 };
 const MAX_LENGTH = 250;
 
 export function isHonestFallback(text) {
   return typeof text === 'string' && HONEST_FALLBACK.test(text);
 }
 
-export function qualityIssues(text, { lang } = {}) {
+export function qualityIssues(text, { lang, kind = 'img' } = {}) {
   const issues = [];
   if (text == null) return ['missing: no name was produced at all'];
   const t = String(text).trim();
 
   if (isHonestFallback(t)) return issues;              // allowed by spec 2.2
 
-  if (t.length < MIN_LENGTH) issues.push(`too short: ${t.length} < ${MIN_LENGTH}`);
+  const floor = MIN_LENGTH[kind] ?? MIN_LENGTH.img;
+  if (t.length < floor) issues.push(`too short for a ${kind}: ${t.length} < ${floor}`);
   if (t.length > MAX_LENGTH) issues.push(`too long: ${t.length} > ${MAX_LENGTH}`);
   for (const re of GENERIC) {
     if (re.test(t)) { issues.push(`generic or filename-derived: "${t}"`); break; }
@@ -62,13 +67,24 @@ export function looksLikeLanguage(text, lang) {
 // Dice coefficient over word bigrams. Order-insensitive enough to tolerate
 // rephrasing, strict enough that an unrelated description scores near zero.
 export function similarity(a, b) {
-  const grams = (s) => {
-    const w = String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-      .replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter(Boolean);
-    if (w.length < 2) return new Set(w);
-    return new Set(w.slice(0, -1).map((x, i) => `${x} ${w[i + 1]}`));
+  const words = (s) => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter(Boolean);
+
+  const wa = words(a), wb = words(b);
+  // The choice belongs to the PAIR, not to each string. Picking per string let
+  // one side produce word grams and the other character grams, which never
+  // intersect: "Guardar cambios" vs "Guardar" scored 0 while being obviously
+  // close.
+  const useChars = wa.length < 2 || wb.length < 2;
+
+  const grams = (w) => {
+    if (!useChars) return new Set(w.slice(0, -1).map((x, i) => `${x} ${w[i + 1]}`));
+    const chars = w.join('');
+    if (chars.length < 2) return new Set(chars ? [chars] : []);
+    return new Set([...chars].slice(0, -1).map((c, i) => c + chars[i + 1]));
   };
-  const A = grams(a), B = grams(b);
+
+  const A = grams(wa), B = grams(wb);
   if (!A.size || !B.size) return 0;
   let hits = 0;
   for (const g of A) if (B.has(g)) hits++;

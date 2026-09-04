@@ -96,6 +96,19 @@
     }
   },
 
+  "10-icon-only-controls.html": {
+    "lang": "es",
+    "axeRules": ["link-name", "button-name"],
+    "violationsBefore": 4,
+    "note": "No vision tier applies to a link or a button. Every name here must come from href, svg markup or a nested <title> — free, no model. tier 'none' is a failure, not an honest floor.",
+    "candidates": {
+      "contacto": { "kind": "link", "expectTier": "T1", "reference": "Contacto" },
+      "informe": { "kind": "link", "expectTier": "T1", "reference": "Informe anual 2026 en PDF" },
+      "facebook": { "kind": "link", "expectTier": "T1", "reference": "Facebook de la municipalidad" },
+      "buscar": { "kind": "button", "expectTier": "T1", "reference": "Buscar" }
+    }
+  },
+
   "09-text-heavy.html": {
     "lang": "es",
     "axeRules": ["image-alt"],
