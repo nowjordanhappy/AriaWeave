@@ -157,3 +157,42 @@ not reverse the "one paid model" decision.
 Shipping our own key inside the extension is not an option: a public `.zip`
 unpacks in a minute and the quota, the bill and the ban are ours. A hosted proxy
 is already recorded in SPEC §2.2 as roadmap, not build.
+
+---
+
+## 6 — The premise may be off: big sites label images, not controls
+
+**Orchestrator. Measured 2026-09-03**, by counting `<img>` without `alt` on four
+Peruvian sites:
+
+| site | images | missing `alt` |
+|---|---|---|
+| rpp.pe | 103 | 0 |
+| elcomercio.pe | 123 | 0 |
+| larepublica.pe | 202 | 18 |
+| gob.pe (Minsa noticias) | 33 | 0 |
+| gob.pe (SUNAT SOL) | 4 | 0 |
+
+The spec opens by naming unlabelled images as the endemic failure. On these
+front pages it mostly is not: `alt` is present, presumably because CMSs require
+it and SEO tooling nags about it.
+
+**Every real gap we hit today was a control**, not an image: three social links
+on a blog, a newsletter field, three form fields on gob.pe. Those are exactly
+what T1 names for free — from `href`, icon markup and adjacent text — with no
+model, no key and no network.
+
+Two consequences worth deciding on, neither of them urgent:
+
+1. **It strengthens the T2 reversal** (§7.1). If images are usually labelled and
+   controls usually are not, an 8-20 MB OCR bundle buys even less than the
+   measurement already suggested.
+2. **It may change the pitch.** "Describes images your screen reader cannot see"
+   is the intuitive framing; "names the buttons and links nobody labelled" may
+   be the truer one, and it is the half that works with no model at all. Worth
+   settling before the demo script is written, not after.
+
+Caveat: five front pages is a thin sample, and a front page is the part of a
+site most likely to be audited. Article pages, admin panels and older
+subdomains may look nothing like this. Do not rewrite the pitch on this alone —
+but do not write the demo assuming the opposite either.
