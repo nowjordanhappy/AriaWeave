@@ -11,6 +11,15 @@
 // is escalated, not patched away.
 
 export const MIN_LENGTH = 8;
+
+// A control label is legitimately short — "Buscar", "Cerrar", "Guardar" — while
+// an image description that short has said nothing. A single floor of 8 silently
+// rejected T1's correct answers for controls and pushed them to the honest
+// generic, which reads as "the tier had nothing" rather than "the arbiter said
+// no". This same floor existed in four other places for the same reason: it was
+// written from §2.2's example, which is about images.
+export const MIN_LENGTH_BY_KIND = { img: 8, button: 3, link: 3, input: 3 };
+const floorFor = (kind) => MIN_LENGTH_BY_KIND[kind] ?? MIN_LENGTH;
 export const MAX_LENGTH = 250;
 export const MAX_ATTEMPTS = 4;          // hard cap, SPEC §3.4. No exceptions.
 
@@ -76,7 +85,8 @@ const no = (reason) => ({ ok: false, reason });
 // no rule reads them today.
 function args(a, b) {
   if (a && typeof a === 'object' && !Array.isArray(a)) {
-    return { text: a.description ?? a.text ?? null, ...b, lang: b?.lang ?? a.lang, langUndecided: b?.langUndecided ?? a.langUndecided };
+    return { text: a.description ?? a.text ?? null, ...b, lang: b?.lang ?? a.lang,
+             kind: b?.kind ?? a.kind, langUndecided: b?.langUndecided ?? a.langUndecided };
   }
   return { text: a, ...b };
 }
@@ -91,7 +101,7 @@ function args(a, b) {
  *   retry loop keeps escalating instead of settling for it.
  */
 export function verify(input, opts) {
-  const { text, lang } = args(input, opts);
+  const { text, lang, kind } = args(input, opts);
   if (text == null) return no('empty: the tier produced no text');
   const t = String(text).trim();
 
@@ -103,7 +113,8 @@ export function verify(input, opts) {
   }
   if (FILENAME.test(t)) return no(`filename: "${t}" is a file name, not a description`);
 
-  if (t.length < MIN_LENGTH) return no(`too short: ${t.length} characters, minimum is ${MIN_LENGTH}`);
+  const floor = floorFor(kind);
+  if (t.length < floor) return no(`too short for a ${kind || 'description'}: ${t.length} characters, minimum is ${floor}`);
   if (t.length > MAX_LENGTH) return no(`too long: ${t.length} characters, maximum is ${MAX_LENGTH}`);
 
   for (const re of HALLUCINATION) {

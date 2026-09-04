@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import {
   launchWithExtension, launchWithModelProfile, fixtureUrl, readExpectations,
-  namesById, settle, HONEST_FALLBACK,
+  namesById, settle, settleFor, HONEST_FALLBACK,
 } from './helpers/extension.js';
 import { qualityIssues, similarity, SIMILARITY_THRESHOLD } from './helpers/quality.js';
 
@@ -21,7 +21,7 @@ test.describe('descriptions are worth having', () => {
     test(`${name} — every planted candidate is named usefully`, async () => {
       const page = await ctx.newPage();
       await page.goto(fixtureUrl(name));
-      await settle(page, spec.settleMs ?? 2500);
+      await settleFor(page, Object.keys(spec.candidates), spec.settleMs ? spec.settleMs + 6000 : 6000);
       const got = await namesById(page);
 
       for (const [id, want] of Object.entries(spec.candidates)) {
@@ -55,13 +55,14 @@ test.describe('descriptions are worth having', () => {
     test(`${name} — free tiers resemble the references, and the honest floor holds`, async () => {
       const page = await ctx.newPage();
       await page.goto(fixtureUrl(name));
-      await settle(page, spec.settleMs ?? 2500);
+      await settleFor(page, Object.keys(spec.candidates), spec.settleMs ? spec.settleMs + 6000 : 6000);
       const got = await namesById(page);
 
       for (const [id, want] of Object.entries(spec.candidates)) {
         if (want.silent || !want.reference) continue;
         const actual = got[id];
         const tier = actual?.tier;
+        if (want.noTextSignal && (!tier || tier === 'none')) continue;
 
         if (!tier || tier === 'none') {
           // The honest floor is a floor for IMAGES ONLY, and only because a
@@ -71,10 +72,20 @@ test.describe('descriptions are worth having', () => {
           // to the generic there is a routing or heuristic failure, not an
           // honest limit, and accepting it is how this harness certified the
           // `context.name` collision as a pass (docs/FINDINGS.md finding 2).
-          expect(want.kind,
-            `#${id} produced no tier and fell to "${actual?.name}". A ${want.kind} `
-            + `has no vision path, so it must be named from context by T1.`)
-            .toBe('img');
+          // ...unless the control genuinely carries no text signal at all. A bare
+          // icon — no <title>, no class token, no href, no adjacent text — has
+          // only its path geometry, and guessing "Guardar" from a floppy-disk
+          // outline is the confident-wrong answer §2.2 bans. There the honest
+          // generic is the correct output, not a routing failure. Those
+          // candidates are flagged `noTextSignal` in expectations.json, and
+          // giving them a real name needs the deferred icon-rasterisation
+          // decision (docs/FINDINGS.md).
+          if (!want.noTextSignal) {
+            expect(want.kind,
+              `#${id} produced no tier and fell to "${actual?.name}". A ${want.kind} `
+              + `carries a text signal, so it must be named from context by T1.`)
+              .toBe('img');
+          }
 
           // Language is deliberately not asserted here: fixture 08 declares a
           // lang that contradicts its content and SPEC 5 defers that rule.
@@ -95,7 +106,7 @@ test.describe('descriptions are worth having', () => {
   test('09-text-heavy.html — the OCR tier handles it, not the paid one', async () => {
     const page = await ctx.newPage();
     await page.goto(fixtureUrl('09-text-heavy.html'));
-    await settle(page);
+    await settleFor(page, Object.keys(EXPECT['09-text-heavy.html'].candidates), 8000);
     const got = await namesById(page);
     expect(got.horario?.tier, 'text-heavy image should route to T2, not escalate')
       .toBe('T2');
@@ -125,7 +136,7 @@ test.describe('descriptions resemble the human references @needs-model', () => {
     test(`${name} — vision descriptions match the references`, async () => {
       const page = await ctx.newPage();
       await page.goto(fixtureUrl(name));
-      await settle(page, spec.settleMs ?? 4000);
+      await settleFor(page, Object.keys(spec.candidates), 12000);
       const got = await namesById(page);
 
       for (const [id, want] of Object.entries(spec.candidates)) {

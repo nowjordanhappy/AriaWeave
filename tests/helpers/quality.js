@@ -59,6 +59,14 @@ export function looksLikeLanguage(text, lang) {
   const base = String(lang).slice(0, 2).toLowerCase();
   const want = MARKERS[base];
   if (!want) return true;
+
+  // Too short to judge. "Ir a Facebook" carries no Spanish stopword from any
+  // reasonable list while "a" sits in the English one, so a marker count calls
+  // correct Spanish English and rejects it. Control labels are routinely three
+  // words, which is exactly where this heuristic stops being evidence.
+  const words = String(text).trim().split(/\s+/).filter(Boolean);
+  if (words.length < 4) return true;
+
   const other = base === 'es' ? MARKERS.en : MARKERS.es;
   if (want.test(text)) return true;
   return !other.test(text);      // no markers either way: too short to judge

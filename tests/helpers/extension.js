@@ -168,3 +168,27 @@ export async function namesById(page) {
 export async function settle(page, ms = 2500) {
   await page.waitForTimeout(ms);
 }
+
+// Wait for the WORK, not for the clock.
+//
+// A fixed sleep lies in both directions: too short and a correct run reports
+// null, too long and every test pays for the slowest page. 07-lang-missing
+// failed and passed on consecutive runs with no code change between them, which
+// is the worst kind of red — it teaches people to re-run instead of read.
+//
+// Returns either way after the deadline, so a genuine failure still reports the
+// real state of the page rather than a timeout.
+export async function settleFor(page, ids, ms = 6000) {
+  await page
+    .waitForFunction(
+      (list) => list.every((id) => {
+        const el = document.getElementById(id);
+        if (!el) return false;
+        return el.tagName.toLowerCase() === 'img'
+          ? el.hasAttribute('alt')
+          : (el.hasAttribute('aria-label') || (el.textContent || '').trim().length > 0);
+      }),
+      ids, { timeout: ms },
+    )
+    .catch(() => {});
+}
