@@ -32,6 +32,8 @@ import { verify as laneCVerify } from '../verifier/index.js';
 // would return the same string and prove nothing; the loop only has something
 // to feed back when a model is answering. Evidence has to come from a live run.
 const LOOP_LOG_MAX = 40;
+console.info('[AriaWeave loop] instrumentation active — every tier outcome is logged, '
+  + 'so an empty console means nothing ran, not that nothing was rejected.');
 const loopEvents = [];
 
 function loopLog(candidate, tier, out, rejected, afterFeedback) {
@@ -144,7 +146,7 @@ async function describe(candidate, lang, plan, image = null) {
     ran = tier;
 
     const verdict = await check({ ...out, lang, kind: candidate.kind, candidate });
-    if (verdict?.ok) return out;
+    if (verdict?.ok) { loopLog(candidate, tier, out, null, feedback || null); return out; }
 
     feedback = verdict?.reason || 'rejected by the verifier';
     if (!best || out.confidence > best.confidence) best = out;
