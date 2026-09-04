@@ -23,6 +23,36 @@ const CONCURRENCY = 2;          // two Nano sessions is the memory a laptop spar
 const MAX_ATTEMPTS = 4;         // hard cap: the retry loop cannot spin (SPEC 3.4)
 import { verify as laneCVerify } from '../verifier/index.js';
 
+// SPEC §6 criterion 3 wants a recorded autonomous loop: generate, verifier
+// rejects, regenerate with the rejection as feedback, pass — no human in
+// between. The loop is implemented above; this exists so that when a real one
+// happens on a real page it is captured verbatim instead of reconstructed.
+//
+// Deliberately not a test fixture. T1 is deterministic, so a synthetic retry
+// would return the same string and prove nothing; the loop only has something
+// to feed back when a model is answering. Evidence has to come from a live run.
+const LOOP_LOG_MAX = 40;
+const loopEvents = [];
+
+function loopLog(candidate, tier, out, rejected, afterFeedback) {
+  const event = {
+    at: new Date().toISOString(),
+    selector: candidate?.selector,
+    tier,
+    text: out?.description,
+    confidence: out?.confidence,
+    ...(rejected ? { rejected } : { accepted: true }),
+    ...(afterFeedback ? { retriedAfter: afterFeedback } : {}),
+  };
+  loopEvents.push(event);
+  if (loopEvents.length > LOOP_LOG_MAX) loopEvents.shift();
+  console.info(
+    `[AriaWeave loop] ${tier} ${rejected ? 'REJECTED' : 'ACCEPTED'}`
+    + `${afterFeedback ? ' (retry after: ' + afterFeedback + ')' : ''}`,
+    event,
+  );
+}
+
 const CONFIDENCE_FLOOR = 0.5;   // below this we say so honestly, never guess
 
 const TIER_FN = { T1, T2, T3, T4 };
@@ -118,6 +148,7 @@ async function describe(candidate, lang, plan, image = null) {
 
     feedback = verdict?.reason || 'rejected by the verifier';
     if (!best || out.confidence > best.confidence) best = out;
+    loopLog(candidate, tier, out, feedback);
 
     // One same-tier retry at the top of the ladder, so the reject -> regenerate
     // -> pass loop still runs when there is no costlier tier left to escalate to.
@@ -128,8 +159,9 @@ async function describe(candidate, lang, plan, image = null) {
       if (retry) {
         ran = tier;
         const again = await check({ ...retry, lang, kind: candidate.kind, candidate });
-        if (again?.ok) return retry;
+        if (again?.ok) { loopLog(candidate, tier, retry, null, feedback); return retry; }
         feedback = again?.reason || feedback;
+        loopLog(candidate, tier, retry, feedback);
       }
     }
   }
@@ -284,7 +316,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
   if (msg?.type === 'ariaweave:status') {
     Promise.all([nanoAvailability(), ocrAvailable(), cloudAvailable()]).then(([nano, ocr, cloud]) => {
-      sendResponse({ enabled, stats, tiers: { T1: true, T2: ocr, T3: nano, T4: cloud } });
+      sendResponse({ enabled, stats, loop: loopEvents,
+                     tiers: { T1: true, T2: ocr, T3: nano, T4: cloud } });
     });
     return true;
   }
