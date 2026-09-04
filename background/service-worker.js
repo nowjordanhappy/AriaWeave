@@ -158,6 +158,9 @@ const area = (c) => (Number(c?.bbox?.width) || 0) * (Number(c?.bbox?.height) || 
 // offset. ponytail: 900px stands in for a fold when `inViewport` is absent —
 // wrong only in the direction of doing visible work slightly too eagerly.
 function visible(c) {
+  // SPEC §4.1 carries `inViewport` now. The fallback below stays for a content
+  // script older than this build, but it is a guess and should never be the
+  // answer when the real signal is available.
   const flag = c?.context?.inViewport ?? c?.context?.visible;
   if (typeof flag === 'boolean') return flag;
   return (Number(c?.bbox?.y ?? c?.bbox?.top) || 0) < 900;

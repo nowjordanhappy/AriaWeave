@@ -272,6 +272,11 @@ function contextFor(el, kind) {
     .map((n) => text(n)).filter(Boolean).join(' ');
   if (labelledBy) ctx.labelledBy = labelledBy;
 
+  // The background sorts by viewport and had no signal, so it guessed with
+  // `bbox.y < 900` — roughly right on first paint and wrong after any scroll.
+  // The content script already knows; it just never said.
+  ctx.inViewport = inViewport(boxOf(el));
+
   const role = el.getAttribute('role');
   if (role) ctx.role = role;
   if (el.getAttribute('aria-hidden') === 'true') ctx.ariaHidden = true;
@@ -357,7 +362,7 @@ function silence(el) {
   refreshInspector();
 }
 
-function apply(el, kind, result) {
+function apply(el, kind, result, ms = null) {
   const lang = pageLang();
   const described = typeof result?.description === 'string' && result.description.trim();
   const confident = described && (result.confidence ?? 0) >= CONFIDENCE_MIN;
@@ -373,6 +378,7 @@ function apply(el, kind, result) {
     before, after: value,
     tier: result?.tier || 'none',
     confidence: result?.confidence ?? null,
+    ms,
     fallback: !confident,
   });
   refreshInspector();
@@ -407,10 +413,16 @@ async function describe(batch) {
 async function processBatch(batch) {
   if (!batch.length) return;
   batch.forEach(({ el }) => inFlight.add(el));
+  // Round-trip for this batch. Measured here rather than in the background
+  // because this is the number a user actually waits through: request out,
+  // attribute on screen. Shown in inspection mode, so latency is something you
+  // can see on a real page instead of inferring from a benchmark.
+  const t0 = performance.now();
   const bySelector = new Map((await describe(batch)).map((r) => [r.selector, r]));
+  const ms = Math.round(performance.now() - t0);
   write(() => {
     for (const item of batch) {
-      apply(item.el, item.kind, bySelector.get(cssPath(item.el)));
+      apply(item.el, item.kind, bySelector.get(cssPath(item.el)), ms);
       inFlight.delete(item.el);
     }
   });
@@ -513,7 +525,8 @@ function renderInspector(on) {
       // message round-trip — same behaviour, none of the plumbing.
       const what = document.createElement('button');
       what.type = 'button';
-      what.textContent = `${r.id ? '#' + r.id : r.selector} · ${r.tier}`;
+      what.textContent = `${r.id ? '#' + r.id : r.selector} · ${r.tier}`
+        + (r.ms == null ? '' : ` · ${r.ms} ms`);
       what.title = 'Mostrar este elemento en la página';
       what.style.cssText = 'display:block;width:100%;text-align:left;margin:0 0 4px;'
         + 'padding:0;border:0;background:none;color:inherit;font:inherit;font-weight:600;'

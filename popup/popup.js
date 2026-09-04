@@ -23,7 +23,7 @@ function describeItem(r) {
 
   const tier = document.createElement('span');
   tier.className = 'tier';
-  tier.textContent = ` · ${r.tier}`;
+  tier.textContent = ` · ${r.tier}` + (r.ms == null ? '' : ` · ${r.ms} ms`);
 
   const after = document.createElement('p');
   after.style.margin = '4px 0 0';

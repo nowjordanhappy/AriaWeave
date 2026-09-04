@@ -64,6 +64,7 @@ export function readContext(candidate) {
     svg: str('svg'),
     dataUrl: str('dataUrl'),
     pageText: str('pageText'),
+    inViewport: ctx.inViewport === true,
     hidden: ctx.ariaHidden === true,
     presentation: /^(presentation|none)$/i.test(str('role')),
   };

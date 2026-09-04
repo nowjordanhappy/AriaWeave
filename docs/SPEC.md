@@ -222,6 +222,7 @@ here is a DOM observation, never a judgement.
 | `labelledBy` | all | resolved text of `aria-labelledby` / `aria-describedby` |
 | `title` | all | the `title` attribute |
 | `role` | all | explicit `role` |
+| `inViewport` | all | boolean; is the element on screen right now |
 | `ariaHidden` | all | boolean |
 | `junkAlt` | img | the existing but useless `alt` |
 | `filename` | img | basename of `src`, query stripped |
