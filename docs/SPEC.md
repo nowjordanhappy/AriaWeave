@@ -196,6 +196,72 @@ Result    = { selector, description, confidence, tier }
 - `confidence` — 0..1; below threshold the honest-generic path applies
 - `tier` — which tier produced it; surfaced in inspection mode
 
+### 4.1 `context` — the keys, amended 2026-09-03
+
+The original contract named `context` and said nothing about its keys. That was
+too thin, and it cost a real bug: lane A sent `name` meaning *the input's `name`
+attribute*, lane B read `name` meaning *the accessible name*, so every
+`<input name="…">` looked already-named, was skipped before T1 ran, and shipped
+"Campo sin etiqueta" — while T1, given the same candidate, returns "Email
+address" at 0.7 confidence. The answer was there all along.
+
+Nobody broke the contract. The contract froze the envelope and left the contents
+to convention, so lane B wrote a defensive synonym reader, and a defensive
+reader is precisely how drift stays invisible.
+
+**Lane A reports facts. Lane B is the only place that interprets them.** A key
+here is a DOM observation, never a judgement.
+
+| key | kinds | what it is |
+|---|---|---|
+| `lang` | all | `document.documentElement.lang \|\| navigator.language` (§5) |
+| `tag` | all | lowercased tag name |
+| `heading` | all | nearest preceding heading text |
+| `nearby` | all | cheap surrounding text |
+| `preceding` | input | label-ish text immediately before the field |
+| `labelledBy` | all | resolved text of `aria-labelledby` / `aria-describedby` |
+| `title` | all | the `title` attribute |
+| `role` | all | explicit `role` |
+| `ariaHidden` | all | boolean |
+| `junkAlt` | img | the existing but useless `alt` |
+| `filename` | img | basename of `src`, query stripped |
+| `caption` | img | `figcaption` text |
+| `href` | link | the raw `href`; path and hostname both carry meaning |
+| `inputType` | input | the `type` attribute |
+| `inputName` | input | the `name` attribute |
+| `placeholder` | input | the `placeholder` attribute |
+| `svg` | button, link | inline `<svg>` outerHTML, capped at 2 KB |
+| `dataUrl` | img, button, link | **reserved, not yet sent** — see below |
+
+**`name` is a forbidden key.** It is the one that collided, and reserving it
+stops the collision from being reintroduced by someone reading only one side.
+
+`svg` is markup, not pixels: `class="icon-search"`, `<use href="#icon-close">`
+and a nested `<title>` are text signals T1 can use for free. It does not license
+guessing "Guardar" from a floppy-disk outline.
+
+`dataUrl` is reserved so that giving controls a vision path later — rasterising
+an icon in the content script, where a layout engine exists — is not a second
+contract amendment. `loadImage()` already prefers it. **Not built.**
+
+**Lane B reads these keys and no others.** The synonym lists come out: an
+unknown key is a contract violation to report, not a shape to guess at.
+
+### 4.2 Shared constants are part of the contract
+
+The honest-generic strings (§2.2) are contract, not implementation. They ended
+up defined three times across three lanes with two capitalisations because the
+contract covered shapes and not values.
+
+| kind | es | en |
+|---|---|---|
+| img | `Imagen no descrita con confianza` | `Image not described with confidence` |
+| button | `Botón sin nombre accesible` | `Button without accessible name` |
+| link | `Enlace sin nombre accesible` | `Link without accessible name` |
+| input | `Campo sin etiqueta` | `Field without label` |
+
+A frozen shape does not freeze the values that travel in it. Both now are.
+
 ---
 
 ## 5. Language

@@ -36,6 +36,23 @@ That fixture is Lane D's to write, i.e. mine.
 
 ## 2 — Controls without a name have no path beyond T1
 
+> **Amended 2026-09-03: this is partly a routing bug, not only a spec gap.**
+> `router.js:51` reads `context.name` as the *accessible* name while
+> `content/index.js:190` sends it as the input's `name` **attribute**, so every
+> named input is skipped before T1 runs. Verified in the loaded extension:
+> `#dni`, `#correo` and `#nacimiento` all come back `tier: "none"`, and T1 given
+> the same candidate returns "Email address" at 0.7. A second casualty: T1's
+> `humanise(attrName)` rule can never fire, because lane A never sends
+> `attrName`.
+>
+> **The harness certifies the bug.** `quality.spec.js:65` accepts `tier: none`
+> plus the honest string as a pass — the SYSTEM §6 defect class, an honest
+> fallback masking a routing failure. Lane D narrows that branch first, so the
+> harness fails before anyone fixes anything.
+>
+> Contract amended in SPEC §4.1: `inputName` replaces `name`, which is now a
+> forbidden key. Remaining genuine gap below.
+
 **Lane B, and possibly a spec gap. Found in the same run.**
 
 All seven elements found on that page resolved to `tier: "none"` and the honest
