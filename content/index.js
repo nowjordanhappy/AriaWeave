@@ -460,10 +460,27 @@ function renderInspector(on) {
     for (const r of records) {
       const li = document.createElement('li');
       li.style.cssText = 'margin:0 0 8px;padding-bottom:8px;border-bottom:1px solid #ddd';
-      li.textContent = `${r.id ? '#' + r.id : r.selector} · ${r.tier}\n`
-        + `antes: ${r.before ?? '(sin atributo)'}\n`
+
+      // The identifier is a control here too. The overlay lives in the page, so
+      // it calls reveal() straight rather than going through the popup's
+      // message round-trip — same behaviour, none of the plumbing.
+      const what = document.createElement('button');
+      what.type = 'button';
+      what.textContent = `${r.id ? '#' + r.id : r.selector} · ${r.tier}`;
+      what.title = 'Mostrar este elemento en la página';
+      what.style.cssText = 'display:block;width:100%;text-align:left;margin:0 0 4px;'
+        + 'padding:0;border:0;background:none;color:inherit;font:inherit;font-weight:600;'
+        + 'cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px';
+      what.addEventListener('click', () => {
+        if (!reveal(r.selector)) what.textContent += ' — ya no está';
+      });
+
+      const body = document.createElement('span');
+      body.style.whiteSpace = 'pre-line';
+      body.textContent = `antes: ${r.before ?? '(sin atributo)'}\n`
         + `después: ${r.after === '' ? '(silenciado)' : r.after}`;
-      li.style.whiteSpace = 'pre-line';
+
+      li.append(what, body);
       ul.append(li);
     }
     panel.append(ul);
