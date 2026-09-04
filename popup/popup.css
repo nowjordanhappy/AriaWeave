@@ -34,4 +34,11 @@ button.report[aria-pressed="true"] { background: #111; color: #fff; }
 [role="button"].what { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
 [role="button"].what:hover { color: #b0452f; }
 [role="button"].what:focus-visible { outline: 2px solid #2f3e9e; outline-offset: 2px; border-radius: 2px; }
-[role="button"].what[data-gone="1"]::after { content: " — ya no está en la página"; opacity: .7; font-style: italic; }
+[role="button"].what[data-state="gone"]::after {
+  content: " — ya no está en la página"; opacity: .7; font-style: italic;
+}
+/* The extension was reloaded and this tab still runs the old content script.
+   Says what to do, not just that something went wrong. */
+[role="button"].what[data-state="stale"]::after {
+  content: " — recarga la página (⌘R) para volver a conectar"; opacity: .7; font-style: italic;
+}

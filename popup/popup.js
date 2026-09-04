@@ -43,10 +43,19 @@ function describeItem(r) {
   const reveal = async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab?.id) return;
-    const res = await chrome.tabs.sendMessage(tab.id, {
-      type: 'ariaweave:reveal', selector: r.selector,
-    }).catch(() => null);
-    what.dataset.gone = res?.found ? '' : '1';
+    // Three outcomes, three messages. Collapsing them was worse than useless:
+    // after reloading the extension, an already-open tab keeps running the old
+    // content script, which does not know this message — and reporting that as
+    // "the element is gone" sends the reader hunting for a bug in the page.
+    let res = null, unreachable = false;
+    try {
+      res = await chrome.tabs.sendMessage(tab.id, {
+        type: 'ariaweave:reveal', selector: r.selector,
+      });
+      if (res === undefined) unreachable = true;
+    } catch { unreachable = true; }
+
+    what.dataset.state = unreachable ? 'stale' : res?.found ? '' : 'gone';
   };
   what.addEventListener('click', reveal);
   what.addEventListener('keydown', (e) => {
