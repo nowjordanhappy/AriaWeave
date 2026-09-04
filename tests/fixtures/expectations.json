@@ -121,6 +121,16 @@
     }
   },
 
+  "12-language-provocation.html": {
+    "lang": "es",
+    "axeRules": ["image-alt"],
+    "violationsBefore": 1,
+    "note": "Spanish page, English image text. Exists to provoke a real language rejection so the autonomous loop (SPEC §6 criterion 3) can be recorded from a genuine cause rather than a simulated one.",
+    "candidates": {
+      "aviso-en": { "kind": "img", "reference": "Un aviso que informa que la oficina estará cerrada el lunes por feriado nacional" }
+    }
+  },
+
   "09-text-heavy.html": {
     "lang": "es",
     "axeRules": ["image-alt"],

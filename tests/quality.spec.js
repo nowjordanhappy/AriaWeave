@@ -3,7 +3,7 @@ import {
   launchWithExtension, launchWithModelProfile, fixtureUrl, readExpectations,
   namesById, namesByIndex, settle, settleFor, settleForCount, HONEST_FALLBACK,
 } from './helpers/extension.js';
-import { qualityIssues, similarity, SIMILARITY_THRESHOLD } from './helpers/quality.js';
+import { qualityIssues, similarity, looksLikeLanguage, SIMILARITY_THRESHOLD } from './helpers/quality.js';
 
 const EXPECT = readExpectations();
 const FIXTURES = Object.keys(EXPECT).filter((k) => !k.startsWith('_'));
@@ -169,6 +169,37 @@ test.describe('text in images is transcribed, not just described @needs-model', 
       expect(alt, `#horario (tier ${got.horario?.tier}) lost "${fact}": "${got.horario?.name}"`)
         .toContain(fact);
     }
+    await page.close();
+  });
+});
+
+// SPEC §6 criterion 3 — the autonomous loop, provoked by a real condition.
+//
+// A Spanish page carrying an image whose text is English. A vision tier that
+// transcribes what it sees answers in English; the page declares lang="es", so
+// the language rule rejects it and the reason returns as feedback for the
+// retry. Nothing here stubs a tier or forces a failure — the loop either
+// happens for a genuine reason or it does not, and either is a result.
+test.describe('the honest provocation @needs-model', () => {
+  let ctx;
+  test.beforeAll(async () => { ctx = await launchWithModelProfile(); });
+  test.afterAll(async () => { await ctx?.close(); });
+
+  test('12-language-provocation.html — English image, Spanish answer', async () => {
+    const page = await ctx.newPage();
+    await page.goto(fixtureUrl('12-language-provocation.html'));
+    await settleFor(page, ['aviso-en'], 15000);
+    const got = await namesById(page);
+    const alt = got['aviso-en']?.name || '';
+
+    // Whether it took one attempt or two is the loop's business and is recorded
+    // in the service worker log. What this asserts is the outcome the rule
+    // exists for: the page's language wins, because a screen reader takes its
+    // voice from the DOM and Spanish prose read by an English voice is worse
+    // than no label at all.
+    expect(alt, 'no description was produced at all').not.toBe('');
+    expect(looksLikeLanguage(alt, 'es'),
+      `answered in the image's language rather than the page's: "${alt}"`).toBe(true);
     await page.close();
   });
 });

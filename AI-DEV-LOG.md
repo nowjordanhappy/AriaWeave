@@ -85,3 +85,63 @@ plan no longer exist because the API has shipped to stable.
 second cloud model as a hedge. Deferred the wrong-`lang` rule until the corpus
 shows how it fails. Did not build visual-regression testing for the popup —
 screenshots cover it at a fraction of the cost.
+
+---
+
+## 2026-09-03 — The verifier never rejects, and why that is not good news
+
+**Goal.** Record criterion 3: an autonomous loop — generate, verifier rejects,
+regenerate with the rejection as feedback, pass, with no human in between.
+
+**The loop was already built.** The rejection reason is threaded into the next
+tier call, and a same-tier retry runs when no costlier rung remains, under a
+hard attempt cap. What was missing was evidence, and evidence could not be
+manufactured: T1 is deterministic, so a synthetic retry returns the same string
+and proves nothing. The loop only has something to feed back when a model is
+answering. So the pipeline was instrumented rather than simulated.
+
+**First instrument was itself wrong.** It logged only rejections, so a run where
+everything passed printed nothing — and "no output" meant either "no loop
+happened" or "this build is not running", with no way to tell them apart. The
+same defect the hour-zero probe had on day one: an observation whose negative
+and whose broken state look identical. Fixed by logging every outcome and
+announcing itself at startup.
+
+**Live run, larepublica.pe, 200 images.** Thirteen descriptions generated in
+Spanish on a page nobody prepared:
+
+```
+T3 ACCEPTED  "La imagen muestra el título 'PUENTE A CHINA' con franja roja y
+              amarilla, asociada a noticias políticas."
+T3 ACCEPTED  "Una nota escrita a mano amenaza con leyes peores ... mientras una
+              granada negra está adjunta al papel."
+T3 ACCEPTED  "La imagen muestra el martillo de juez en primeros planos, con
+              desenfoque y una atmósfera cálida."
+```
+
+One every ~1.5 s, two in flight, and a 42-second gap where the deferred
+off-screen batch waited for a scroll — viewport priority working.
+
+**Thirteen of thirteen accepted. Not one rejection.**
+
+**Why, and it is a consequence of our own decision.** The verifier's rules
+target refusals, JSON leakage, punctuation soup and single-character scatter.
+That is OCR garbage and cloud formatting failure — the output of T2 and T4.
+Dropping T2 to roadmap and leaving T4 unwired removed exactly the tiers that
+produce what the verifier was built to catch. The gate does not close because
+nothing dirty walks through it any more.
+
+**What was not done.** Stub a tier to fail. That manufactures the artefact the
+criterion asks for while proving nothing about the system.
+
+**What was done instead.** `12-language-provocation.html`: a Spanish page
+carrying an image whose text is entirely English — a supplier's banner, an
+untranslated cover, ordinary on the real web. A tier that transcribes what it
+sees answers in English; the page declares `lang="es"`, the language rule
+rejects it, and the reason goes back as feedback. A real cause, not a forced
+one. If the model answers in Spanish first time, no loop occurs, and that is a
+result to report rather than engineer around.
+
+**Also observed, and worth keeping honest.** T3 misreads logos — "PERE LEGAL",
+"CUADADO" — and slips on gender, "El caricatura". The descriptions are useful.
+They are not accurate, and the demo should not claim otherwise.
