@@ -109,6 +109,18 @@
     }
   },
 
+  "11-duplicate-ids.html": {
+    "lang": "es",
+    "axeRules": ["label"],
+    "violationsBefore": 2,
+    "byIndex": true,
+    "note": "Two inputs share one id. Each must get its OWN label from its own context — the second is a phone field and must not inherit the first's email label. Checked by position, since the ids cannot tell them apart.",
+    "candidates": {
+      "0": { "kind": "input", "expectTier": "T1", "reference": "Correo electrónico" },
+      "1": { "kind": "input", "expectTier": "T1", "reference": "Número de teléfono" }
+    }
+  },
+
   "09-text-heavy.html": {
     "lang": "es",
     "axeRules": ["image-alt"],

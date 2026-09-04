@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<title>Formularios con id repetido</title>
+<h1>Contacto</h1>
+<!-- Two forms, two fields, one id. Invalid HTML and completely ordinary on the
+     real web — found on gob.pe, where three fields shared
+     id="feedback_gobpe_safeguard_code_name".
+
+     If a selector is built from the id alone it is not unique, so
+     querySelector() returns the first match for all of them: descriptions
+     computed from one element's context get written onto another, and the
+     rest are never labelled at all. A confident wrong label is worse than no
+     label (SPEC §2.2), and no other fixture can express this. -->
+<form>
+  <h2>Formulario superior</h2>
+  <p>Correo electrónico</p>
+  <input id="campo" type="email" name="correo">
+</form>
+
+<form>
+  <h2>Formulario inferior</h2>
+  <p>Número de teléfono</p>
+  <input id="campo" type="tel" name="telefono">
+</form>

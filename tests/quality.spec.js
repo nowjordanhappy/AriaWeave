@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import {
   launchWithExtension, launchWithModelProfile, fixtureUrl, readExpectations,
-  namesById, settle, settleFor, HONEST_FALLBACK,
+  namesById, namesByIndex, settle, settleFor, settleForCount, HONEST_FALLBACK,
 } from './helpers/extension.js';
 import { qualityIssues, similarity, SIMILARITY_THRESHOLD } from './helpers/quality.js';
 
@@ -21,8 +21,10 @@ test.describe('descriptions are worth having', () => {
     test(`${name} — every planted candidate is named usefully`, async () => {
       const page = await ctx.newPage();
       await page.goto(fixtureUrl(name));
-      await settleFor(page, Object.keys(spec.candidates), spec.settleMs ? spec.settleMs + 6000 : 6000);
-      const got = await namesById(page);
+      const n = Object.keys(spec.candidates).length;
+      if (spec.byIndex) await settleForCount(page, n, 8000);
+      else await settleFor(page, Object.keys(spec.candidates), spec.settleMs ? spec.settleMs + 6000 : 6000);
+      const got = spec.byIndex ? await namesByIndex(page) : await namesById(page);
 
       for (const [id, want] of Object.entries(spec.candidates)) {
         const actual = got[id];
@@ -55,8 +57,10 @@ test.describe('descriptions are worth having', () => {
     test(`${name} — free tiers resemble the references, and the honest floor holds`, async () => {
       const page = await ctx.newPage();
       await page.goto(fixtureUrl(name));
-      await settleFor(page, Object.keys(spec.candidates), spec.settleMs ? spec.settleMs + 6000 : 6000);
-      const got = await namesById(page);
+      const n = Object.keys(spec.candidates).length;
+      if (spec.byIndex) await settleForCount(page, n, 8000);
+      else await settleFor(page, Object.keys(spec.candidates), spec.settleMs ? spec.settleMs + 6000 : 6000);
+      const got = spec.byIndex ? await namesByIndex(page) : await namesById(page);
 
       for (const [id, want] of Object.entries(spec.candidates)) {
         if (want.silent || !want.reference) continue;

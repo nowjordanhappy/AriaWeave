@@ -170,7 +170,17 @@ const SKIP_INPUT_TYPES = new Set(['hidden', 'submit', 'button', 'reset', 'image'
 // this only has to be unique and valid — but it is a real selector, because a
 // selector nobody can run is a debugging trap.
 function cssPath(el) {
-  if (el.id) return `#${CSS.escape(el.id)}`;
+  // An id is only a shortcut while it is unique. Duplicate ids are invalid HTML
+  // and completely ordinary on the real web — gob.pe ships three fields sharing
+  // id="feedback_gobpe_safeguard_code_name". With a bare #id selector,
+  // querySelector() returns the first match for every one of them, so a
+  // description computed from one element's context lands on another and the
+  // rest are never labelled. That is a confident wrong label, which SPEC §2.2
+  // ranks below no label at all.
+  if (el.id) {
+    const escaped = `#${CSS.escape(el.id)}`;
+    if (el.getRootNode().querySelectorAll(escaped).length === 1) return escaped;
+  }
   const parts = [];
   for (let n = el; n && n.nodeType === 1 && n !== document.documentElement; n = n.parentElement) {
     let i = 1;

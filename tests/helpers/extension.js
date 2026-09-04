@@ -169,6 +169,32 @@ export async function settle(page, ms = 2500) {
   await page.waitForTimeout(ms);
 }
 
+// For fixtures whose ids are deliberately duplicated, identity by id is the
+// thing under test and cannot also be the way we look elements up. Key by
+// document order instead, over the elements the extension actually marked.
+export async function namesByIndex(page) {
+  return page.evaluate(() => [...document.querySelectorAll('[data-ariaweave-tier]')]
+    .filter((el) => !el.hasAttribute('data-ariaweave-ui'))
+    .map((el) => {
+      const tag = el.tagName.toLowerCase();
+      return {
+        tag,
+        name: tag === 'img' ? el.getAttribute('alt') : el.getAttribute('aria-label'),
+        hasAltAttr: tag === 'img' ? el.hasAttribute('alt') : null,
+        tier: el.getAttribute('data-ariaweave-tier'),
+        lang: el.getAttribute('lang'),
+      };
+    }));
+}
+
+export async function settleForCount(page, n, ms = 6000) {
+  await page
+    .waitForFunction((want) => document
+      .querySelectorAll('[data-ariaweave-tier]:not([data-ariaweave-ui])').length >= want,
+      n, { timeout: ms })
+    .catch(() => {});
+}
+
 // Wait for the WORK, not for the clock.
 //
 // A fixed sleep lies in both directions: too short and a correct run reports

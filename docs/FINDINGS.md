@@ -6,7 +6,26 @@ is the orchestrator's list.
 
 ---
 
-## 1 — Duplicate `id` on a real page may send a label to the wrong element
+## 1 — FIXED 2026-09-03 — duplicate `id` sent a label to the wrong element
+
+> Confirmed, reproduced and fixed. `cssPath()` returned `#id` whenever an element
+> had one, so two elements sharing an id produced the same selector and
+> `querySelector()` answered with the first for both. Demonstrated by fixture
+> `11-duplicate-ids.html`: without the fix the email field was labelled
+> **"Número de teléfono"** — the second field's description written onto the
+> first — and the second was never labelled at all.
+>
+> **axe stayed green through the whole bug.** "Zero violations with the
+> extension" passed with the wrong label in place, because axe asks whether a
+> name exists, not whether it is the right one. Criteria 1 and 2 are a pair, and
+> this is what the pair is for.
+>
+> `cssPath()` now uses `#id` only after confirming it matches exactly one
+> element, and falls back to the positional path otherwise.
+>
+> Original report below.
+
+### Original report
 
 **Lane A. Found 2026-09-02 on the first real-world run** (clearlydecoded.com, a
 blog, not even a hard case).
