@@ -11,6 +11,11 @@ export const FIXTURES = path.join(REPO, 'tests/fixtures');
 // background/). It does not exist yet — that is why this harness is red.
 export const EXTENSION_PATH = process.env.ARIAWEAVE_EXT || REPO;
 
+// Headed only when you want to watch. Chrome needed a window while the harness
+// used --load-extension; the CDP Extensions.loadUnpacked path does not, so the
+// default is headless and the suite stops stealing focus mid-run.
+export const HEADLESS = process.env.ARIAWEAVE_HEADED !== '1';
+
 export function extensionExists() {
   return fs.existsSync(path.join(EXTENSION_PATH, 'manifest.json'));
 }
@@ -55,7 +60,7 @@ export async function launchWithExtension() {
   requireExtension();
   const ctx = await chromium.launchPersistentContext('', {
     channel: 'chrome',
-    headless: false,
+    headless: HEADLESS,
     ignoreDefaultArgs: ['--disable-extensions'],
     args: [
       '--enable-unsafe-extension-debugging',
@@ -87,7 +92,7 @@ export async function launchWithModelProfile() {
   }
   const ctx = await chromium.launchPersistentContext(MODEL_PROFILE, {
     channel: 'chrome',
-    headless: false,
+    headless: HEADLESS,
     ignoreDefaultArgs: ['--disable-extensions'],
     args: ['--enable-unsafe-extension-debugging', '--no-first-run', '--no-default-browser-check'],
   });
@@ -111,7 +116,7 @@ export const HONEST_FALLBACK = [
 export async function launchClean() {
   return chromium.launchPersistentContext('', {
     channel: 'chrome',
-    headless: false,
+    headless: HEADLESS,
     args: ['--no-first-run', '--no-default-browser-check'],
   });
 }

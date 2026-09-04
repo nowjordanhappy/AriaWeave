@@ -20,6 +20,18 @@ Built for Howdy Dev Day 2026.
 | [docs/SYSTEM.md](docs/SYSTEM.md) | How it is built: lanes, isolation, harness, and orchestration |
 | [CHANGELOG.md](CHANGELOG.md) | User-facing changes |
 
+## Running the harness
+
+```
+npm test                      # headless, does not steal focus
+ARIAWEAVE_HEADED=1 npm test   # watch it happen
+```
+
+The suite drives real Chrome rather than Playwright's Chromium, because Gemini
+Nano is a Chrome browser component. It loads the extension over CDP —
+`--load-extension` was removed from Chrome-branded builds in 137 and is now
+ignored silently.
+
 ## Status
 
 Spec committed. No implementation yet — by design: the spec predates the code,
