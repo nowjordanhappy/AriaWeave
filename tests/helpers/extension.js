@@ -181,13 +181,14 @@ export async function settle(page, ms = 2500) {
 export async function settleFor(page, ids, ms = 6000) {
   await page
     .waitForFunction(
-      (list) => list.every((id) => {
-        const el = document.getElementById(id);
-        if (!el) return false;
-        return el.tagName.toLowerCase() === 'img'
-          ? el.hasAttribute('alt')
-          : (el.hasAttribute('aria-label') || (el.textContent || '').trim().length > 0);
-      }),
+      // Wait for OUR mark, not for a name. An earlier version waited for an alt
+      // attribute, which fixture 02's images already carry — with junk in them.
+      // The condition was true before the extension had done anything, so the
+      // test read the junk alt and reported a regression in 136ms. The tier
+      // attribute is written only by us, so its presence is unambiguous
+      // evidence that this element was processed.
+      (list) => list.every((id) => document
+        .getElementById(id)?.hasAttribute('data-ariaweave-tier')),
       ids, { timeout: ms },
     )
     .catch(() => {});

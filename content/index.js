@@ -74,7 +74,31 @@ function isJunkAlt(alt) {
     || JUNK_ALT_CAMERA.test(t);
 }
 
-const text = (el) => (el?.textContent || '').replace(/\s+/g, ' ').trim();
+// textContent includes <style> and <script> bodies. On gob.pe that produced a
+// label reading ".gobpe_safeguard_code_name_1788488262 {position:absolute
+// !important;height:1px;width:1px;overflow:hidden;}" — a stylesheet announced
+// to a screen reader as the name of a form field. A confident wrong answer, and
+// the exact failure §2.2 exists to prevent.
+//
+// nearbyText already skipped those tags as siblings, but they can be nested
+// anywhere below, and precedingText did not skip them at all. Fixing it here
+// fixes every caller at once, which is why it belongs here and not in each.
+const NON_TEXT = /^(SCRIPT|STYLE|TEMPLATE|NOSCRIPT|SVG|IFRAME|OBJECT)$/;
+
+const text = (el) => {
+  if (!el) return '';
+  if (NON_TEXT.test(el.tagName)) return '';
+  let out = '';
+  const walk = (node) => {
+    for (const child of node.childNodes) {
+      if (child.nodeType === 3) out += child.nodeValue;
+      else if (child.nodeType === 1 && !NON_TEXT.test(child.tagName)
+               && child.getAttribute('aria-hidden') !== 'true') walk(child);
+    }
+  };
+  walk(el);
+  return out.replace(/\s+/g, ' ').trim();
+};
 
 function labelledByText(el) {
   const ids = el.getAttribute('aria-labelledby');
@@ -320,6 +344,7 @@ function silence(el) {
     selector: cssPath(el), id: el.id || null, kind: 'img',
     before: el.getAttribute('alt'), after: '', tier: 'T0', decorative: true,
   });
+  refreshInspector();
 }
 
 function apply(el, kind, result) {
@@ -340,6 +365,7 @@ function apply(el, kind, result) {
     confidence: result?.confidence ?? null,
     fallback: !confident,
   });
+  refreshInspector();
 }
 
 // ---------------------------------------------------------------- pipeline
@@ -434,6 +460,17 @@ function stopObserver() {
 // ---------------------------------------------------------------- inspection
 
 const INSPECTOR_ID = 'ariaweave-inspector';
+
+// The overlay is rendered once when inspection mode turns on, so it showed
+// "0 elementos" on gob.pe while the popup — which reads live state — showed 3.
+// Two views of the same data disagreeing is worse than one view: it makes the
+// reader distrust both. Re-render whenever a record lands.
+let inspectorPending = false;
+function refreshInspector() {
+  if (!inspecting || !enabled || inspectorPending) return;
+  inspectorPending = true;
+  requestAnimationFrame(() => { inspectorPending = false; renderInspector(true); });
+}
 
 function renderInspector(on) {
   const existing = document.getElementById(INSPECTOR_ID);
