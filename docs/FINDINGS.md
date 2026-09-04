@@ -80,3 +80,33 @@ to `tests/`.
 **Lane B.** The one tier that could carry criterion 2's similarity slice in a
 clean profile, for free and with no key. SPEC §7.1 says it is never cut. It is
 the only remaining red test in the reproducible project.
+
+---
+
+## 5 — Decision pending: does the demo need a cloud tier at all?
+
+**Orchestrator. Raised 2026-09-03.**
+
+T4 is unwired. Before wiring anything, answer the prior question: **T1 and T3
+already work end to end.** If a cloud tier adds nothing the demo shows, leaving
+T4 unwired and saying so as an explicit limit costs nothing and scores in a
+competition that grades honesty about scope.
+
+If a cloud tier *is* wanted, Gemini Flash's free tier is a candidate for the T4
+slot — a swap of which model occupies it, not a second paid model, so it does
+not reverse the "one paid model" decision.
+
+**What it is not:** a replacement for T3, on two grounds.
+
+1. It needs an API key. That does not remove the model download, it trades one
+   click for an AI Studio signup — more friction for the end user, not less. The
+   zero-config promise gets worse.
+2. **Images would leave the machine.** T3 is on-device and nothing is uploaded.
+   For a tool that runs on whatever page the user happens to open — medical
+   records, bank statements, personal photos — that is a change to what the
+   product *is*, not a deployment detail. It deserves to be a stated decision
+   rather than a side effect of picking a tier.
+
+Shipping our own key inside the extension is not an option: a public `.zip`
+unpacks in a minute and the quota, the bill and the ban are ours. A hosted proxy
+is already recorded in SPEC §2.2 as roadmap, not build.
