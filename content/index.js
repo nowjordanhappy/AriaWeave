@@ -628,8 +628,35 @@ function refreshInspector() {
   requestAnimationFrame(() => { inspectorPending = false; renderInspector(true); });
 }
 
+const headline = () => {
+  const queued = pending.size + inFlightCount;
+  return `AriaWeave — ${records.length} elementos`
+    + (queued > 0 ? ` · ${queued} en cola…` : '');
+};
+
+// Update in place; never rebuild.
+//
+// Recreating the panel every 900ms tore the page's scroll position back to the
+// top: Chrome anchors your scroll to a node, and removing a large element from
+// the document breaks that anchor. It also wiped the panel's own scroll and
+// every row's focus. `overflow-anchor: none` keeps the panel itself out of the
+// anchoring calculation for good measure.
+function updateInspector() {
+  const panel = document.getElementById(INSPECTOR_ID);
+  if (!panel) return false;
+  write(() => {
+    const h = panel.querySelector('h2');
+    if (h) h.textContent = headline();
+    const ul = panel.querySelector('ul');
+    if (!ul) return;
+    for (const r of records.slice(ul.children.length)) ul.append(inspectorRow(r));
+  });
+  return true;
+}
+
 function renderInspector(on) {
   const existing = document.getElementById(INSPECTOR_ID);
+  if (on && existing && updateInspector()) return;
   write(() => {
     existing?.remove();
     if (!on) return;
@@ -641,18 +668,25 @@ function renderInspector(on) {
     panel.style.cssText = 'position:fixed;z-index:2147483647;right:12px;bottom:12px;'
       + 'max-height:50vh;width:340px;overflow:auto;background:#fff;color:#111;'
       + 'border:2px solid #111;border-radius:8px;padding:12px;'
-      + 'font:13px/1.4 system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.3)';
+      + 'font:13px/1.4 system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.3);'
+      + 'overflow-anchor:none';
 
     const h = document.createElement('h2');
-    const queued = pending.size + inFlightCount;
-    h.textContent = `AriaWeave — ${records.length} elementos`
-      + (queued > 0 ? ` · ${queued} en cola…` : '');
+    h.textContent = headline();
     h.style.cssText = 'margin:0 0 8px;font-size:14px';
     panel.append(h);
 
     const ul = document.createElement('ul');
     ul.style.cssText = 'margin:0;padding:0;list-style:none';
-    for (const r of records) {
+    for (const r of records) ul.append(inspectorRow(r));
+    panel.append(ul);
+    document.documentElement.append(panel);
+  });
+}
+
+function inspectorRow(r) {
+  {
+    {
       const li = document.createElement('li');
       li.style.cssText = 'margin:0 0 8px;padding-bottom:8px;border-bottom:1px solid #ddd';
 
@@ -677,11 +711,9 @@ function renderInspector(on) {
         + `después: ${r.after === '' ? '(silenciado)' : r.after}`;
 
       li.append(what, body);
-      ul.append(li);
+      return li;
     }
-    panel.append(ul);
-    document.documentElement.append(panel);
-  });
+  }
 }
 
 // ---------------------------------------------------------------- lifecycle
