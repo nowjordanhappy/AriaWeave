@@ -276,3 +276,44 @@ That is the fourth time this week an observation could not tell its own
 negative from its own success. It is beginning to look less like a run of bad
 luck and more like the default state of a measurement nobody designed a failure
 case for.
+
+---
+
+## 2026-09-04 — Four controls, seven milliseconds, no model
+
+elcomercio.pe, live, after the day's fixes. Verbatim:
+
+```
+04:14:33.401  T1 ACCEPTED  'Buscar en El Comercio'   (input, from its placeholder)
+04:14:33.405  T1 ACCEPTED  'Cerrar'                  (button, from class v-short__close-btn)
+04:14:33.406  T1 ACCEPTED  'Anterior'                (button, from class v-short__nav--left)
+04:14:33.408  T1 ACCEPTED  'Siguiente'               (button, from class v-short__nav--right)
+```
+
+Seven milliseconds for all four. No model, no network, no key, no download.
+
+**This is the product's centre of gravity and it took a week to see it.** The
+spec opens by naming unlabelled images as the endemic failure. Measurement says
+otherwise: five gob.pe pages produced three violations between them, all in
+controls; elcomercio.pe produced four, all controls; the blog before that,
+seven, all controls. Every real gap encountered in a week of live browsing has
+been a control, and controls are named by rules — instantly, for nothing.
+
+The comparison that belongs in the demo:
+
+| | cost |
+|---|---|
+| Four controls, T1 | **7 ms**, nothing |
+| One image, T3 on-device | ~1,500 ms, free but heavy |
+| One image, T4 cloud | ~3,000 ms and $0.003 |
+
+At T4 prices, someone browsing a hundred pages a day would spend about $5 a
+day to label pictures. For a free accessibility tool that is not expensive, it
+is impossible — which is what makes the on-device tier the product rather than
+a feature of it, and the rules tier the part that works on any machine at all.
+
+**None of these four signals came from a fixture.** The placeholder was losing
+to a subscription banner six levels up the tree; the class names were being
+discarded entirely; and "Anterior" was being rejected by a language detector
+that was confident and wrong. Three defects, one page, none of them expressible
+in a corpus written by the person who wrote the bugs.
