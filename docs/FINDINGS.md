@@ -160,7 +160,21 @@ is already recorded in SPEC §2.2 as roadmap, not build.
 
 ---
 
-## 6 — The premise may be off: big sites label images, not controls
+## 6 — CONFIRMED 2026-09-04 — big sites label images; the gaps are controls
+
+> Measured again, this time with axe rather than by counting `alt` attributes.
+> Five gob.pe pages, live and with JavaScript executed: **3 violations in total**
+> across all five. `/institucion/pcm`, `/tramites` and a Reniec campaign page had
+> **zero**. The SUNAT page had zero live and zero in a snapshot.
+>
+> The only material found was `label:2` on the Minsa news page and
+> `button-name:1` on search — **both controls, no images**. The snapshot taken
+> for criterion 5 then produced, from T1 alone with no model and no network:
+> `Fecha de inicio` and `Fecha de fin`.
+>
+> The pitch should lead with controls. Images are the opt-in second act.
+
+### Original entry
 
 **Orchestrator. Measured 2026-09-03**, by counting `<img>` without `alt` on four
 Peruvian sites:

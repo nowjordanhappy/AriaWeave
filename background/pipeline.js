@@ -85,13 +85,27 @@ const ICON_TOKEN = {
         cart: 'Cart', mail: 'Mail', phone: 'Phone', settings: 'Settings' },
 };
 
+// Two date fields sitting under one shared <label> is the commonest range
+// control on the web, and naming both from that label leaves a screen reader
+// user unable to tell which end is which. A name that DISTINGUISHES a field
+// from its sibling beats a name it shares with it, so a range token in the
+// field's own name outranks the ancestor label.
+const RANGE_TOKEN = {
+  es: { start: 'inicio', end: 'fin', from: 'desde', to: 'hasta', min: 'mínimo',
+        max: 'máximo', desde: 'desde', hasta: 'hasta', inicio: 'inicio', fin: 'fin' },
+  en: { start: 'start', end: 'end', from: 'from', to: 'to', min: 'minimum',
+        max: 'maximum', desde: 'from', hasta: 'to', inicio: 'start', fin: 'end' },
+};
+
 const LINK_TO = { es: (n) => `Ir a ${n}`, en: (n) => `Go to ${n}` };
 
 const INPUT_BY_TYPE = {
   es: { email: 'Correo electrónico', tel: 'Número de teléfono', search: 'Buscar en el sitio',
-        password: 'Contraseña', url: 'Dirección web' },
+        password: 'Contraseña', url: 'Dirección web', date: 'Fecha',
+        time: 'Hora', number: 'Número', file: 'Archivo adjunto' },
   en: { email: 'Email address', tel: 'Phone number', search: 'Search the site',
-        password: 'Password', url: 'Web address' },
+        password: 'Password', url: 'Web address', date: 'Date',
+        time: 'Time', number: 'Number', file: 'Attached file' },
 };
 
 const clean = (s) => String(s).replace(/\s+/g, ' ').trim().slice(0, MAX_LENGTH);
@@ -123,9 +137,19 @@ export async function T1(candidate, lang) {
   }
 
   if (candidate.kind === 'input') {
+    const byType = INPUT_BY_TYPE[l]?.[ctx.inputType];
+
+    // Distinguishing beats shared. Checked before `preceding` on purpose: the
+    // label above a date range belongs to both ends of it.
+    const token = (String(ctx.attrName || '').toLowerCase().match(/[a-z]+/g) || [])
+      .map((w) => RANGE_TOKEN[l]?.[w]).find(Boolean);
+    if (byType && token) {
+      const t = usable(`${byType} de ${token}`, 'input');
+      if (t) return { description: t, confidence: 0.8, tier: 'T1' };
+    }
+
     const t = usable(ctx.preceding, 'input') || usable(ctx.placeholder, 'input');
     if (t) return { description: t, confidence: 0.85, tier: 'T1' };
-    const byType = INPUT_BY_TYPE[l]?.[ctx.inputType];
     if (byType) return { description: byType, confidence: 0.7, tier: 'T1' };
     const humanised = usable(humanise(ctx.attrName), 'input');
     if (humanised) return { description: humanised, confidence: 0.6, tier: 'T1' };
@@ -181,8 +205,11 @@ export async function T1(candidate, lang) {
   return null;
 }
 
+// `filter[start_date]` is an ordinary form-name shape and came back as
+// "Filter[start date]" — bracket syntax read aloud, in English, on a Spanish
+// page. Flatten the brackets before humanising rather than after.
 const humanise = (s) =>
-  String(s || '').replace(/[-_+.]+/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2')
+  String(s || '').replace(/\[|\]/g, ' ').replace(/[-_+.]+/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2')
     .replace(/\s+/g, ' ').trim().replace(/^./, (c) => c.toUpperCase());
 
 // ---------------------------------------------------------------------------

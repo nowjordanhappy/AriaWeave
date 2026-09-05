@@ -218,11 +218,19 @@ function nearbyText(el) {
 // Text sitting immediately before a field, which is what an author writes when
 // they skip the <label> element: a <p>, a <span>, a bare text node.
 function precedingText(el) {
-  let n = el.previousElementSibling;
-  for (let hops = 0; n && hops < 2; hops++, n = n.previousElementSibling) {
-    if (/^(input|select|textarea|button|form)$/i.test(n.tagName)) break;
-    const t = text(n);
-    if (t) return t;
+  // Walk up as well as back. gob.pe wraps each date field in three divs and puts
+  // the real <label> — "Filtrar por fecha de publicación" — as a sibling of the
+  // outermost one, so a direct-sibling scan finds nothing and the field falls
+  // back to its own name attribute. That produced "Filter[start date]": English
+  // bracket syntax on a Spanish page, while the words a human wrote sat two
+  // levels up.
+  for (let node = el, up = 0; node && up < 6; node = node.parentElement, up++) {
+    let n = node.previousElementSibling;
+    for (let back = 0; n && back < 2; back++, n = n.previousElementSibling) {
+      if (/^(input|select|textarea|button|form)$/i.test(n.tagName)) break;
+      const t = text(n);
+      if (t && t.length <= 120) return t;
+    }
   }
   return '';
 }

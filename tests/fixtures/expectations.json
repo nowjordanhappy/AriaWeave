@@ -121,6 +121,18 @@
     }
   },
 
+  "real/minsa-noticias/index.html": {
+    "lang": "es",
+    "axeRules": ["label"],
+    "violationsBefore": 2,
+    "real": true,
+    "note": "SPEC §6 criterion 5. Captured 2026-09-04 from gob.pe/institucion/minsa/noticias — the DOM the browser built, not the HTML the server sent, because the gaps on a modern site live in what JavaScript injected. Stylesheets are downloaded rather than dropped: deleting them un-hides whatever the page hides with CSS, and a snapshot that alters visibility measures a page nobody visits. Verified identical to live (label:2) and fully offline.",
+    "candidates": {
+      "filter_start_date": { "kind": "input", "reference": "Fecha de inicio, filtrar por fecha de publicación" },
+      "filter_end_date": { "kind": "input", "reference": "Fecha de fin, filtrar por fecha de publicación" }
+    }
+  },
+
   "12-language-provocation.html": {
     "lang": "es",
     "axeRules": ["image-alt"],
