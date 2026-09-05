@@ -432,6 +432,7 @@ async function processBatch(batch) {
     for (const item of batch) {
       apply(item.el, item.kind, bySelector.get(cssPath(item.el)), ms);
       inFlight.delete(item.el);
+      claim(item.el);
     }
   });
 }
@@ -451,8 +452,86 @@ async function run() {
   const visible = candidates.filter((c) => inViewport(c.bbox));
   const deferred = candidates.filter((c) => !inViewport(c.bbox));
   await processBatch(visible);
-  await processBatch(deferred);
+
+  // Off-screen work is paced, never abandoned.
+  //
+  // Draining `deferred` in one go described every candidate at once: a news
+  // front page with 200 unlabelled images is 200 inferences at ~2 s with two in
+  // flight, which is three minutes of continuous on-device model, a spinning
+  // fan and a flat battery.
+  //
+  // The obvious fix — only describe what scrolls into view — is wrong here, and
+  // wrong in a way worth writing down. A screen reader user does not scroll.
+  // They move by keyboard and virtual cursor and reach the whole document in
+  // DOM order, so an element that never enters the visual viewport is still
+  // read aloud. Gating on visibility would leave exactly that reader with
+  // unnamed controls, which is the opposite of the point.
+  //
+  // So: viewport and focus raise priority, idle time does the rest, and
+  // everything is eventually named.
+  observeApproach(deferred);
+  drainWhenIdle(deferred);
 }
+
+// 300px of runway, so something is usually named before it reaches the eye.
+const APPROACH_MARGIN = '300px';
+const IDLE_CHUNK = 3;
+
+let approach = null;
+const pending = new Map();
+
+function claim(el) {
+  const item = pending.get(el);
+  if (item) { pending.delete(el); approach?.unobserve(el); }
+  return item;
+}
+
+function observeApproach(items) {
+  if (!items.length) return;
+  if (!approach) {
+    approach = new IntersectionObserver((entries) => {
+      const arrived = entries.filter((e) => e.isIntersecting)
+        .map((e) => claim(e.target)).filter(Boolean);
+      if (arrived.length) processBatch(arrived);
+    }, { rootMargin: APPROACH_MARGIN });
+  }
+  for (const item of items) {
+    if (pending.has(item.el)) continue;
+    pending.set(item.el, item);
+    approach.observe(item.el);
+  }
+}
+
+// A screen reader user's cursor shows up here: moving to a control focuses it
+// long before it would scroll into anyone's view.
+addEventListener('focusin', (e) => {
+  const item = e.target && claim(e.target);
+  if (item) processBatch([item]);
+}, true);
+
+let idling = false;
+function drainWhenIdle() {
+  if (idling) return;
+  idling = true;
+  const step = () => {
+    const batch = [];
+    for (const el of pending.keys()) {
+      if (batch.length >= IDLE_CHUNK) break;
+      batch.push(claim(el));
+    }
+    if (!batch.length) { idling = false; return; }
+    processBatch(batch).finally(() => schedule(step));
+  };
+  schedule(step);
+}
+
+// requestIdleCallback where it exists: the browser tells us when the page is
+// not busy, which is the whole point of pacing this work.
+const schedule = (fn) => (globalThis.requestIdleCallback
+  ? requestIdleCallback(fn, { timeout: 2000 })
+  : setTimeout(fn, 250));
+
+
 
 let running = false;
 let rerun = false;

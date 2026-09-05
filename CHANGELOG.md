@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the current tab, and a per-item flag for a bad description.
 - Inspection mode: an on-page overlay showing before → after and the tier that
   produced each description. Off by default.
+- Off-screen elements are described gradually while the page is idle, and jump
+  the queue when they scroll into view or receive keyboard focus. A long page no
+  longer runs the model on everything at once — and nothing is left unnamed.
 - Inspection mode and the popup show how long each batch took, so latency is
   visible on a real page rather than inferred from a benchmark.
 - Click any entry — in the popup or in the inspection overlay — and the page
