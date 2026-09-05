@@ -210,3 +210,41 @@ Caveat: five front pages is a thin sample, and a front page is the part of a
 site most likely to be audited. Article pages, admin panels and older
 subdomains may look nothing like this. Do not rewrite the pitch on this alone —
 but do not write the demo assuming the opposite either.
+
+---
+
+## 7 — A label that contains a live clock poisons its own cache
+
+**Lane A / orchestrator. Observed 2026-09-05 on cnn.com.**
+
+The homepage's live-news input came back labelled:
+
+```
+Catch up on today's global news, Live4:50
+```
+
+`ancestorText()` reached a block containing a running timer and glued it on. The
+label is usable — a screen reader user hearing "Live 4:50" learns roughly what
+they need — so this is not a correctness bug in the sense §2.2 cares about.
+
+It is a **caching** bug. The cache key includes the candidate's context, so a
+label that changes every minute produces a fresh key every minute: the entry is
+never reused, and the pipeline pays again for an element it has already named.
+On a page kept open, that repeats indefinitely.
+
+Two ways to close it, neither obviously right yet:
+
+- **Strip clock-shaped runs** from borrowed text before using it
+  (`\b\d{1,2}:\d{2}\b`). Cheap, and narrow enough not to lose real content.
+- **Key the cache on the element rather than the context** for control kinds,
+  since a control's identity does not change when the prose beside it does.
+
+The second is the better fix and the larger one. Worth measuring first: how
+often does borrowed ancestor text actually contain volatile content? One
+observation is not a pattern.
+
+**Related:** the same `ancestorText()` walk produced the subscription-banner
+label on elcomercio.pe (finding in SPEC §4.1 and the 15-banner-above-field
+fixture). Text borrowed from a region keeps turning out to be the weakest signal
+in the ladder, and it may deserve to sit below the type rule rather than above
+it.
