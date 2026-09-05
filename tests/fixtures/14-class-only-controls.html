@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<title>Carrusel</title>
+<style>
+  .v-short__close-btn, .v-short__nav { width: 44px; height: 44px; border: 0;
+    background: #ddd no-repeat center; cursor: pointer; }
+</style>
+<h1>Videos cortos</h1>
+<!-- Taken from elcomercio.pe. The icons are CSS background images, so there is
+     no SVG to read, no text node, no title attribute and no adjacent prose.
+     The class name is the only word the author wrote — a weak signal that must
+     stay behind every authored-text rule, and still far better than a generic
+     that says nothing. Fixture 10 gives its buttons an SVG <title>; this one
+     gives them nothing but their own class. -->
+<div class="v-short__frame">
+  <button id="cerrar" type="button" class="v-short__close-btn"></button>
+  <button id="anterior" type="button" class="v-short__nav v-short__nav--left"></button>
+  <button id="siguiente" type="button" class="v-short__nav v-short__nav--right"></button>
+</div>

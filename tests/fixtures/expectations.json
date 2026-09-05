@@ -109,6 +109,18 @@
     }
   },
 
+  "14-class-only-controls.html": {
+    "lang": "es",
+    "axeRules": ["button-name"],
+    "violationsBefore": 3,
+    "note": "Captured from elcomercio.pe: carousel buttons whose icons are CSS backgrounds. No SVG, no text, no title — the class name is the only word the author wrote.",
+    "candidates": {
+      "cerrar": { "kind": "button", "expectTier": "T1", "reference": "Cerrar" },
+      "anterior": { "kind": "button", "expectTier": "T1", "reference": "Anterior" },
+      "siguiente": { "kind": "button", "expectTier": "T1", "reference": "Siguiente" }
+    }
+  },
+
   "11-duplicate-ids.html": {
     "lang": "es",
     "axeRules": ["label"],

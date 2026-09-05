@@ -266,6 +266,14 @@ function contextFor(el, kind) {
     if (href) ctx.href = href;
   }
 
+  // The author's own words, and often the only ones. elcomercio.pe ships
+  // `v-short__close-btn` and `v-short__nav--left` on buttons whose icons are CSS
+  // backgrounds — no SVG, no text, nothing else to read. A class name is a weak
+  // signal and must stay behind every authored-text rule, but it beats the
+  // generic, which says nothing at all.
+  const cls = (el.getAttribute('class') || '').trim();
+  if (cls) ctx.className = cls.slice(0, 200);
+
   if (kind === 'button' || kind === 'link') {
     // Markup, not pixels: class tokens, <use href="#icon-close"> and a nested
     // <title> are text the author wrote. Capped so a sprite sheet cannot ride

@@ -62,6 +62,7 @@ export function readContext(candidate) {
     attrName: str('inputName'),
     placeholder: str('placeholder'),
     svg: str('svg'),
+    className: str('className'),
     dataUrl: str('dataUrl'),
     pageText: str('pageText'),
     inViewport: ctx.inViewport === true,

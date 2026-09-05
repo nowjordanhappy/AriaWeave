@@ -78,11 +78,17 @@ const ICON_TOKEN = {
   es: { search: 'Buscar', close: 'Cerrar', menu: 'Menú', save: 'Guardar',
         delete: 'Eliminar', trash: 'Eliminar', edit: 'Editar', print: 'Imprimir',
         share: 'Compartir', download: 'Descargar', home: 'Inicio', user: 'Cuenta',
-        cart: 'Carrito', mail: 'Correo', phone: 'Teléfono', settings: 'Ajustes' },
+        cart: 'Carrito', mail: 'Correo', phone: 'Teléfono', settings: 'Ajustes',
+        next: 'Siguiente', prev: 'Anterior', previous: 'Anterior',
+        right: 'Siguiente', left: 'Anterior', play: 'Reproducir',
+        pause: 'Pausar', mute: 'Silenciar', expand: 'Ampliar', back: 'Volver' },
   en: { search: 'Search', close: 'Close', menu: 'Menu', save: 'Save',
         delete: 'Delete', trash: 'Delete', edit: 'Edit', print: 'Print',
         share: 'Share', download: 'Download', home: 'Home', user: 'Account',
-        cart: 'Cart', mail: 'Mail', phone: 'Phone', settings: 'Settings' },
+        cart: 'Cart', mail: 'Mail', phone: 'Phone', settings: 'Settings',
+        next: 'Next', prev: 'Previous', previous: 'Previous',
+        right: 'Next', left: 'Previous', play: 'Play',
+        pause: 'Pause', mute: 'Mute', expand: 'Expand', back: 'Back' },
 };
 
 // Two date fields sitting under one shared <label> is the commonest range
@@ -189,7 +195,9 @@ export async function T1(candidate, lang) {
   // Icon tokens the author wrote: class="icon-search", <use href="#icon-close">.
   // Words, never path geometry — see the note below.
   if (candidate.kind === 'button' || candidate.kind === 'link') {
-    const tokens = `${ctx.svg} ${ctx.tag}`.toLowerCase().match(/[a-z]{3,}/g) || [];
+    // The element's own class last: an author writes `close-btn` on the button
+    // itself far more often than a <title> inside its icon.
+    const tokens = `${ctx.svg} ${ctx.className}`.toLowerCase().match(/[a-z]{3,}/g) || [];
     for (const tok of tokens) {
       const word = ICON_TOKEN[l]?.[tok];
       if (word) {
