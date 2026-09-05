@@ -396,6 +396,23 @@ function silence(el) {
 }
 
 function apply(el, kind, result, ms = null) {
+  // Never describe the same element twice.
+  //
+  // On cnn.com an image was described at 1693 ms and described AGAIN at
+  // 3159 ms, the second pass reading our own first answer as its "before" and
+  // overwriting it with a different one. Two inferences paid for, and a label
+  // that changes under the reader on a page that re-renders.
+  //
+  // The scan already skips anything carrying TIER_ATTR, so the second call
+  // arrived by another route — a queue holding a reference from an earlier run,
+  // most likely. Rather than guess which, refuse the write here where every
+  // route converges, and say so, so the route identifies itself.
+  if (el.hasAttribute(TIER_ATTR)) {
+    console.info('[AriaWeave] refused a second description for an element already named',
+      { tier: el.getAttribute(TIER_ATTR), existing: el.getAttribute('alt') ?? el.getAttribute('aria-label') });
+    return;
+  }
+
   const lang = pageLang();
   const described = typeof result?.description === 'string' && result.description.trim();
   const confident = described && (result.confidence ?? 0) >= CONFIDENCE_MIN;
@@ -443,8 +460,11 @@ async function describe(batch) {
   }
 }
 
+let inFlightCount = 0;
+
 async function processBatch(batch) {
   if (!batch.length) return;
+  inFlightCount += batch.length;
   batch.forEach(({ el }) => inFlight.add(el));
   // Round-trip for this batch. Measured here rather than in the background
   // because this is the number a user actually waits through: request out,
@@ -458,6 +478,7 @@ async function processBatch(batch) {
       apply(item.el, item.kind, bySelector.get(cssPath(item.el)), ms);
       inFlight.delete(item.el);
       claim(item.el);
+      inFlightCount = Math.max(0, inFlightCount - 1);
     }
   });
 }
@@ -705,7 +726,7 @@ function reveal(selector) {
 
 chrome.runtime.onMessage.addListener((msg, _sender, respond) => {
   if (msg?.type === 'ariaweave:state') {
-    respond({ enabled, inspecting, records });
+    respond({ enabled, inspecting, records, queued: pending.size + inFlightCount });
   }
   if (msg?.type === 'ariaweave:reveal') {
     respond({ found: reveal(msg.selector) });

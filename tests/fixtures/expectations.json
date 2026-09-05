@@ -112,8 +112,8 @@
   "15-banner-above-field.html": {
     "lang": "es",
     "axeRules": ["label"],
-    "violationsBefore": 1,
-    "note": "The field's own placeholder must beat a promotional banner several levels above it. Text authored for a region is not a label for a field inside it.",
+    "violationsBefore": 0,
+    "note": "Zero axe violations on purpose: a placeholder counts as an accessible name, so `label` never fires — while the name a bad ancestor walk would produce is a subscription pitch. Only criterion 2 sees that. The field's own placeholder must beat a promotional banner several levels above it. Text authored for a region is not a label for a field inside it.",
     "candidates": {
       "buscador": { "kind": "input", "expectTier": "T1", "reference": "Buscar en El Comercio" }
     }
