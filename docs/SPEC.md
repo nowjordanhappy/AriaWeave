@@ -309,9 +309,12 @@ waits on the publication question (§8).
 2. Every generated description passes the verifier's quality rules, and
    similarity against the reference set clears the threshold on the labeled
    fixtures.
-3. At least one recorded autonomous loop: generate → verifier rejects →
-   regenerate with the rejection as feedback → pass, with zero human prompts in
-   between.
+3. ~~At least one recorded autonomous loop~~ **MET 2026-09-04.** Recorded
+   verbatim in `AI-DEV-LOG.md`: T1 answered in English from an untranslated
+   `title`, Chrome's on-device `LanguageDetector` rejected it against the page's
+   `lang="es"`, and T3 regenerated in Spanish carrying that rejection as
+   feedback. Provoked by a real condition (`13-loop-provocation.html`), never a
+   stubbed tier.
 4. Latency budget met, and the idempotency test is green: no `MutationObserver`
    self-trigger loop.
 5. A live run on a real Peruvian government page, snapshotted in fixtures and

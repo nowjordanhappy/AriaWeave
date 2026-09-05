@@ -192,3 +192,53 @@ logged. Whether real pages actually produce T1 rejections is now an open
 question with a working instrument, rather than a closed one with a broken one.
 Yesterday's "the gate does not close because nothing dirty walks through it"
 stands only for the rungs the log could see.
+
+---
+
+## 2026-09-04 — Criterion 3, recorded
+
+Verbatim from the service worker console, Chrome 152, a profile with the
+on-device model. No stub, no forced failure, nothing simulated.
+
+```
+[AriaWeave loop] T1 REJECTED
+  { selector: '#comunicado', tier: 'T1',
+    text: 'Important notice from the supplier about the closure',
+    confidence: 0.9,
+    rejected: 'wrong language: the page asks for es, this reads as en' }
+
+[AriaWeave loop] T3 ACCEPTED (retry after: wrong language: the page asks for es, this reads as en)
+  { selector: '#comunicado', tier: 'T3',
+    text: '¡Atención importante! La oficina estará cerrada el lunes por el
+           feriado nacional. La línea de emergencias seguirá disponible.',
+    confidence: 0.7 }
+```
+
+Sixteen seconds apart. Generate, reject with a reason, regenerate **with that
+reason as feedback**, pass. Zero human prompts in between.
+
+**The provocation is a real condition.** `13-loop-provocation.html` is a Spanish
+page carrying an image whose `title` is English — a supplier's asset, a CMS
+field nobody translated, an English CDN. T1 reuses authored text verbatim,
+which is its specced behaviour and usually right, so it answers in English; the
+page declares `lang="es"`, so the language rule rejects it and the reason
+travels to the next rung, which works from the image instead of the attribute.
+
+The rejection came from Chrome's own `LanguageDetector`, not from our stopword
+fallback — visible in the console as the built-in AI notice fired twice, once
+for the detector and once for the model.
+
+**Two earlier attempts failed and both were kept.** Fixture 12 tried to provoke
+the same rejection through the image's own text; it did not fire, because the
+prompt already asks for the page's language and the model translates rather
+than transcribes. And the day before that, the conclusion "the verifier never
+rejects anything" turned out to rest on a console blind to the T1 rung, and
+then on the verifier being wired to `verify()` — the synchronous rules alone —
+when lane C's documented entry point is `check()`, which is the one carrying
+the language rule.
+
+So the honest sequence is not "we built a loop and recorded it". It is: the
+loop existed, three separate instruments failed to see it, each failure was
+found by measuring rather than arguing, and the recording came last. The
+criterion asks for one loop with no human in between; what took the humans was
+learning to look.
