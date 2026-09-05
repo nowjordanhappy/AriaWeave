@@ -109,6 +109,16 @@
     }
   },
 
+  "15-banner-above-field.html": {
+    "lang": "es",
+    "axeRules": ["label"],
+    "violationsBefore": 1,
+    "note": "The field's own placeholder must beat a promotional banner several levels above it. Text authored for a region is not a label for a field inside it.",
+    "candidates": {
+      "buscador": { "kind": "input", "expectTier": "T1", "reference": "Buscar en El Comercio" }
+    }
+  },
+
   "14-class-only-controls.html": {
     "lang": "es",
     "axeRules": ["button-name"],

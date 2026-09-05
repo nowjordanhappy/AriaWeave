@@ -154,9 +154,13 @@ export async function T1(candidate, lang) {
       if (t) return { description: t, confidence: 0.8, tier: 'T1' };
     }
 
-    const t = usable(ctx.preceding, 'input') || usable(ctx.placeholder, 'input');
-    if (t) return { description: t, confidence: 0.85, tier: 'T1' };
+    // The field's own words first, then a nearby label, and only then text
+    // borrowed from an ancestor — which belongs to a region, not to this field.
+    const near = usable(ctx.preceding, 'input') || usable(ctx.placeholder, 'input');
+    if (near) return { description: near, confidence: 0.85, tier: 'T1' };
     if (byType) return { description: byType, confidence: 0.7, tier: 'T1' };
+    const above = usable(ctx.ancestorLabel, 'input');
+    if (above) return { description: above, confidence: 0.55, tier: 'T1' };
     const humanised = usable(humanise(ctx.attrName), 'input');
     if (humanised) return { description: humanised, confidence: 0.6, tier: 'T1' };
   }

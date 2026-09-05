@@ -156,6 +156,7 @@ async function getDetector() {
 // Enough of a signal to trust the detector's answer. Below this the text is too
 // short to judge and the rule stands down rather than rejecting a good name.
 const DETECT_CONFIDENCE = 0.5;
+const MIN_WORDS_TO_JUDGE_LANGUAGE = 4;
 
 const MARKERS = {
   es: /\b(el|la|los|las|un|una|unos|unas|de|del|con|sobre|en|y|que|para|se|su|por|al)\b/gi,
@@ -176,7 +177,7 @@ export function guessLanguage(text, want) {
   // exactly where this heuristic stops meaning anything — and unlike the async
   // detector, which has DETECT_CONFIDENCE to hold it back, this fallback had no
   // such floor.
-  if (String(text).trim().split(/\s+/).filter(Boolean).length < 4) return null;
+  if (String(text).trim().split(/\s+/).filter(Boolean).length < MIN_WORDS_TO_JUDGE_LANGUAGE) return null;
   const hits = (lang) => (String(text).match(MARKERS[lang]) ?? []).length;
   const es = hits('es'), en = hits('en');
   if (es === en) return null;
@@ -189,6 +190,18 @@ export async function verifyLanguage(text, lang) {
   if (!want) return ok();                       // no requested language, no rule
   const t = String(text ?? '').trim();
   if (!t) return ok();                          // verify() already rejected it
+
+  // A label of one or two words carries no language worth acting on, whichever
+  // detector answers. "Anterior" is a correct Spanish button label and also an
+  // ordinary English word, and Chrome's on-device detector confidently called
+  // it English — so a correct name was rejected while "Cerrar" and "Siguiente",
+  // which exist only in Spanish, passed. Confidence is not the guard here: the
+  // detector was confident and wrong, because the word genuinely belongs to
+  // both languages.
+  //
+  // guessLanguage() already abstains below this threshold; the async path needs
+  // the same floor, or the better detector produces the worse outcome.
+  if (t.split(/\s+/).filter(Boolean).length < MIN_WORDS_TO_JUDGE_LANGUAGE) return ok();
 
   const detector = await getDetector();
   if (detector) {

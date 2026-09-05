@@ -259,6 +259,16 @@ async function run(candidates, emit) {
     const lang = pickLang(candidate);
     const t1 = await T1(candidate, lang);
     let feedback = '';
+
+    // When T1 finds nothing, say what it had to work with. An element that ends
+    // up generic is either genuinely signal-free — a bare icon with no title,
+    // no class, no neighbouring text — or it is carrying something we failed to
+    // read, and from the outside those look identical. Printing the context is
+    // the difference between "nothing to say" and "we did not look".
+    if (!t1) {
+      console.info(`[AriaWeave t1-miss] ${candidate.kind} ${candidate.selector}`,
+        JSON.stringify(candidate.context || {}).slice(0, 400));
+    }
     if (t1) {
       const check = verifier();
       const verdict = await check({ ...t1, lang, kind: candidate.kind, candidate });

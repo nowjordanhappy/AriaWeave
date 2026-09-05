@@ -224,12 +224,27 @@ function precedingText(el) {
   // back to its own name attribute. That produced "Filter[start date]": English
   // bracket syntax on a Spanish page, while the words a human wrote sat two
   // levels up.
-  for (let node = el, up = 0; node && up < 6; node = node.parentElement, up++) {
+  return walkBack(el, 0);
+}
+
+// The ancestor walk, kept separate because it is a much weaker signal. On
+// elcomercio.pe it climbed out of the search form and returned an entire
+// subscription banner — "Entérate de todo, sin límites ni interrupciones
+// Suscríbete por S/12 al mes..." — for a field whose own placeholder said
+// "Buscar en El Comercio". Text written for a region is not a label for a
+// field inside it, so this now runs after the field's own attributes.
+function ancestorText(el) {
+  return walkBack(el, 1, 6);
+}
+
+function walkBack(el, from, to = 1) {
+  for (let node = el, up = 0; node && up < to; node = node.parentElement, up++) {
+    if (up < from) continue;
     let n = node.previousElementSibling;
     for (let back = 0; n && back < 2; back++, n = n.previousElementSibling) {
       if (/^(input|select|textarea|button|form)$/i.test(n.tagName)) break;
       const t = text(n);
-      if (t && t.length <= 120) return t;
+      if (t && t.length <= 80) return t;
     }
   }
   return '';
@@ -259,6 +274,8 @@ function contextFor(el, kind) {
     if (el.placeholder) ctx.placeholder = el.placeholder;
     const before = precedingText(el);
     if (before) ctx.preceding = before;
+    const above = ancestorText(el);
+    if (above) ctx.ancestorLabel = above;
   }
 
   if (kind === 'link') {

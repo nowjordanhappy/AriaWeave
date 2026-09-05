@@ -51,6 +51,7 @@ export function readContext(candidate) {
     heading: str('heading'),
     nearby: str('nearby') || (typeof c === 'string' ? c.trim() : ''),
     preceding: str('preceding'),
+    ancestorLabel: str('ancestorLabel'),
     labelledBy: str('labelledBy'),
     title: str('title'),
     role: str('role'),
