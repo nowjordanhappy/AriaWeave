@@ -242,3 +242,37 @@ loop existed, three separate instruments failed to see it, each failure was
 found by measuring rather than arguing, and the recording came last. The
 criterion asks for one loop with no human in between; what took the humans was
 learning to look.
+
+---
+
+## 2026-09-04 — Cold start was 85% of the wait
+
+The first description on a page took **16.5 s** while later ones on the same
+page took ~1.5 s. The gap was never inference. Chrome was initialising the
+LanguageDetector and loading the model into memory for a new session, and both
+were happening while a reader waited for a label — neither depends on the page.
+
+`warm()` now runs when the service worker starts, guarded on availability being
+`ready` so it can never be the thing that trips the download gesture.
+
+Measured on the same fixture, cache cleared, same full loop:
+
+```
+03:56:28.757  T1 REJECTED   'Important notice from the supplier about the closure'
+03:56:31.430  T3 ACCEPTED   (retry after: wrong language: the page asks for es, this reads as en)
+```
+
+**2.67 s, down from 16.5 s.** Six times faster, and the autonomous loop still
+fires inside it — the whole reject-and-regenerate cycle now costs less than the
+old cold start alone.
+
+**The measurement before this one was worthless and looked fine.** A reload
+reported 16 ms, which is not an inference at all — it was a cache hit, and the
+description was byte-identical to the previous run. It could not distinguish
+"the warm-up worked" from "no tier ran". Clearing `chrome.storage` first is
+what made the number mean something.
+
+That is the fourth time this week an observation could not tell its own
+negative from its own success. It is beginning to look less like a run of bad
+luck and more like the default state of a measurement nobody designed a failure
+case for.
