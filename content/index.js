@@ -340,7 +340,14 @@ function scan() {
   const decorative = [];
 
   for (const el of document.querySelectorAll('img, button, a[href], input')) {
-    if (el.hasAttribute(TIER_ATTR) || inFlight.has(el)) continue;
+    // Also skip what is merely WAITING. `pending` holds candidates queued for
+    // the viewport or for idle time, and since that work stopped blocking,
+    // run() returns before any of it starts — so a re-scan triggered by a
+    // mutation saw them as fresh and queued them a second time. On cnn.com the
+    // same image was evaluated twice, and when T1 missed, the model ran twice
+    // for one label; apply() then refused the duplicate, which prevented the
+    // wrong answer but not the wasted inference.
+    if (el.hasAttribute(TIER_ATTR) || inFlight.has(el) || pending.has(el)) continue;
     if (el.closest(`[${UI_ATTR}]`)) continue;
 
     const kind = kindOf(el);
