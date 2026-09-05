@@ -145,3 +145,50 @@ result to report rather than engineer around.
 **Also observed, and worth keeping honest.** T3 misreads logos — "PERE LEGAL",
 "CUADADO" — and slips on gender, "El caricatura". The descriptions are useful.
 They are not accurate, and the demo should not claim otherwise.
+
+---
+
+## 2026-09-04 — The instrument was blind a third time
+
+Yesterday's entry concluded that the verifier never rejects anything, and
+reasoned from there that criterion 3 could not be recorded because T2 and T4 —
+the tiers whose output the verifier polices — were not running.
+
+**That conclusion was drawn from an instrument that could not see the rung it
+was judging.** `run()` handles T1 in its own first pass, outside `describe()`,
+and did this on rejection:
+
+```js
+const verdict = await check({ ...t1, lang, kind: candidate.kind, candidate });
+if (verdict?.ok) { results.push(...); continue; }
+}
+deferred.push({ candidate, lang, plan: { ...plan, tiers: ... } });
+```
+
+Two failures in four lines. `verdict.reason` was discarded, and `describe()`
+then began with `feedback = ''` — so when the ladder escalated from T1 to T3 it
+escalated **blind**, which fails criterion 3 on its own terms ("regenerate with
+the rejection as feedback") even in the case where it visibly climbed. And
+`loopLog` was never called here, so a T1 rejection left no trace: a console
+showing only accepted outcomes could not distinguish "nothing was rejected"
+from "rejections at this rung are invisible".
+
+Which is the same defect, for the third time in this project:
+
+1. The hour-zero probe reported `T3 DOES NOT EXIST HERE` while printing
+   `Image availability: downloadable` two lines above it.
+2. The first loop instrument logged only rejections, so silence meant either
+   "everything passed" or "this build is not running".
+3. This one — a rung excluded from the log that was being used to conclude
+   something about that rung.
+
+The pattern is specific enough to name: **every time this project has drawn a
+confident negative, the instrument could not have shown the positive.** It is
+written into `probing-beats-documentation` in the vault as a rule, and it has
+now been violated three times by the person who wrote the rule down.
+
+**Fixed.** The reason is threaded into pass two, and both outcomes at T1 are
+logged. Whether real pages actually produce T1 rejections is now an open
+question with a working instrument, rather than a closed one with a broken one.
+Yesterday's "the gate does not close because nothing dirty walks through it"
+stands only for the rungs the log could see.

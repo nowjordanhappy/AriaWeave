@@ -124,10 +124,13 @@ function matchesLang(text, lang) {
 // one candidate, all the way down the ladder
 // ---------------------------------------------------------------------------
 
-async function describe(candidate, lang, plan, image = null) {
+// `carried` is the rejection reason from an earlier rung — today, T1's, decided
+// in pass one. Without it the escalation runs blind and criterion 3's "with the
+// rejection as feedback" is unmet even when the ladder visibly climbs.
+async function describe(candidate, lang, plan, image = null, carried = '') {
   const check = verifier();
   let attempts = 0;
-  let feedback = '';
+  let feedback = carried || '';
   let best = null;
   let ran = null;        // the last tier that actually executed, not merely planned
 
@@ -244,19 +247,34 @@ async function run(candidates, emit) {
 
     const lang = pickLang(candidate);
     const t1 = await T1(candidate, lang);
+    let feedback = '';
     if (t1) {
       const check = verifier();
       const verdict = await check({ ...t1, lang, kind: candidate.kind, candidate });
       if (verdict?.ok) {
+        loopLog(candidate, 'T1', t1, null, null);
         results.push(record(emit, { selector: candidate.selector, ...t1 }));
         continue;
       }
+      // The reason was being dropped here. Pass two then began with an empty
+      // feedback string, so the escalation happened without the rejection that
+      // caused it — SPEC §6 criterion 3 asks for "regenerate WITH the rejection
+      // as feedback", and this rung escalated blind. loopLog was also never
+      // called, so a T1 rejection left no trace at all: the console showing
+      // only accepted outcomes could not distinguish "nothing was rejected"
+      // from "rejections here are invisible", and yesterday's conclusion that
+      // the verifier never rejects was drawn from exactly that blind spot.
+      feedback = verdict?.reason || 'rejected by the verifier';
+      loopLog(candidate, 'T1', t1, feedback);
     }
-    deferred.push({ candidate, lang, plan: { ...plan, tiers: plan.tiers.filter((t) => t !== 'T1') } });
+    deferred.push({
+      candidate, lang, feedback,
+      plan: { ...plan, tiers: plan.tiers.filter((t) => t !== 'T1') },
+    });
   }
 
   // Pass two: the tiers that cost time or money, visible work first.
-  await drain(schedule(deferred), async ({ candidate, lang, plan }) => {
+  await drain(schedule(deferred), async ({ candidate, lang, plan, feedback }) => {
     const image = await loadImage(candidate);
     const key = await cache.keyFor({
       bytes: image?.bytes, src: candidate.src || '', kind: candidate.kind, lang,
@@ -270,7 +288,7 @@ async function run(candidates, emit) {
       return;
     }
 
-    const out = await describe(candidate, lang, plan, image ?? false);
+    const out = await describe(candidate, lang, plan, image ?? false, feedback);
     await cache.put(key, out);        // a no-op for the honest fallback, by design
     results.push(record(emit, {
       selector: candidate.selector, description: out.description,
