@@ -117,7 +117,8 @@
     "candidates": {
       "caption": { "kind": "img", "expectTier": "T1", "reference": "Manifestantes marchan por el centro de Lima durante la jornada de protesta" },
       "identifier": { "kind": "img", "noTextSignal": true, "reference": "Una fuente de agua circular con chorros cayendo a un estanque" },
-      "cms": { "kind": "img", "noTextSignal": true, "reference": "Un documento con un sello rojo de aprobación" }
+      "cms": { "kind": "img", "noTextSignal": true, "reference": "Un documento con un sello rojo de aprobación" },
+      "slug": { "kind": "img", "noTextSignal": true, "reference": "Una plaza urbana con edificios a los lados y un árbol al centro" }
     }
   },
 

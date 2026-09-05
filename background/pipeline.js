@@ -249,8 +249,21 @@ function prose(source) {
   // right to answer honestly about that image rather than invent. One marker is
   // tolerated, since a real caption may legitimately say "photo" or "image";
   // two together is a naming convention, not a description.
-  const markers = words.filter((w) => /^(placeholder|generic|untitled|default|thumb|thumbnail|asset|banner|hero|header|footer|background|logo|icon|image|photo|screenshot|still|frame|final|copy|draft|temp|sample|template)$/i.test(w));
+  const markers = words.filter((w) => /^(placeholder|generic|untitled|default|thumb|thumbnail|asset|banner|hero|header|footer|background|logo|icon|image|photo|screenshot|still|frame|final|copy|draft|temp|sample|template|clean|raw|master|edit|cut|vrtc|hrztl|digvid|sot|vo|pkg|cln|gfx|promo)$/i.test(w));
   if (markers.length >= 2) return '';
+
+  // The test that actually separates a sentence from a slug: function words.
+  //
+  // Length and word count let broadcast production names through — "WXAPP Gulf
+  // Stream Change Gears CLN Thumb", "ICEAgent Charges Clean digvid vrtc" — and
+  // announcing those to a screen reader is worse than the honest generic. They
+  // are nouns and codes strung together. A sentence a person wrote has joins in
+  // it: "speaks DURING A prayer conference AT Twickenham Stadium IN London AS
+  // thousands OF worshippers gather FOR THE event".
+  //
+  // Two is enough to tell them apart and low enough for a short real caption.
+  const FUNCTION_WORDS = /^(de|del|la|el|los|las|un|una|unos|unas|en|con|por|para|sobre|entre|desde|hasta|durante|que|y|o|su|sus|al|the|a|an|of|in|on|at|to|for|with|from|during|as|by|and|or|his|her|their|its|into|over|after|before)$/i;
+  if (words.filter((w) => FUNCTION_WORDS.test(w)).length < 2) return '';
 
   return t.length >= 24 && t.length <= MAX_LENGTH ? t : '';
 }
