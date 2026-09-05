@@ -621,6 +621,7 @@ const INSPECTOR_ID = 'ariaweave-inspector';
 // Two views of the same data disagreeing is worse than one view: it makes the
 // reader distrust both. Re-render whenever a record lands.
 let inspectorPending = false;
+setInterval(() => { if (inspecting && enabled && (pending.size + inFlightCount) > 0) refreshInspector(); }, 900);
 function refreshInspector() {
   if (!inspecting || !enabled || inspectorPending) return;
   inspectorPending = true;
@@ -643,7 +644,9 @@ function renderInspector(on) {
       + 'font:13px/1.4 system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.3)';
 
     const h = document.createElement('h2');
-    h.textContent = `AriaWeave — ${records.length} elementos`;
+    const queued = pending.size + inFlightCount;
+    h.textContent = `AriaWeave — ${records.length} elementos`
+      + (queued > 0 ? ` · ${queued} en cola…` : '');
     h.style.cssText = 'margin:0 0 8px;font-size:14px';
     panel.append(h);
 

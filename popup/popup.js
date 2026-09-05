@@ -96,11 +96,24 @@ async function render() {
     return;
   }
   const fixed = state.records ?? [];
-  $('count').textContent = fixed.length === 1
+  const queued = state.queued ?? 0;
+  const done = fixed.length === 1
     ? '1 elemento corregido en esta página'
     : `${fixed.length} elementos corregidos en esta página`;
+
+  // A page with several images can sit for twenty seconds on the first batch.
+  // Showing 0 that whole time and then jumping to 13 reads as broken; saying
+  // what is still queued reads as working.
+  $('count').textContent = queued > 0 ? `${done} · describiendo ${queued} más…` : done;
   items.append(...fixed.map(describeItem));
+
+  // Only while there is something to wait for, and stopping as soon as there
+  // is not — a popup that polls forever is a popup that drains a battery.
+  clearTimeout(poll);
+  if (queued > 0) poll = setTimeout(render, 700);
 }
+
+let poll = null;
 
 for (const key of ['enabled', 'inspecting']) {
   $(key).addEventListener('change', (e) => chrome.storage.local.set({ [key]: e.target.checked }));
