@@ -109,6 +109,18 @@
     }
   },
 
+  "16-caption-in-filename.html": {
+    "lang": "es",
+    "axeRules": ["image-alt"],
+    "violationsBefore": 0,
+    "note": "Zero axe violations: a junk alt still counts as a name, so image-alt never fires while the text announced is a filename. Only criterion 2 sees it. The prose alt must be reused verbatim; the two identifiers must fall through to the honest floor rather than announcing 'Getty Images 1338625942'.",
+    "candidates": {
+      "caption": { "kind": "img", "expectTier": "T1", "reference": "Manifestantes marchan por el centro de Lima durante la jornada de protesta" },
+      "identifier": { "kind": "img", "noTextSignal": true, "reference": "Una fuente de agua circular con chorros cayendo a un estanque" },
+      "cms": { "kind": "img", "noTextSignal": true, "reference": "Un documento con un sello rojo de aprobación" }
+    }
+  },
+
   "15-banner-above-field.html": {
     "lang": "es",
     "axeRules": ["label"],

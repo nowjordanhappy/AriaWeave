@@ -137,7 +137,7 @@ export async function T1(candidate, lang) {
   // is usually invisible to assistive tech because the svg is aria-hidden —
   // exactly the case worth rescuing.
   const svgTitle = /<title[^>]*>([^<]+)<\/title>/i.exec(ctx.svg || '')?.[1];
-  for (const source of [ctx.figcaption, ctx.labelledBy, ctx.title, svgTitle]) {
+  for (const source of [ctx.figcaption, ctx.labelledBy, ctx.title, svgTitle, prose(ctx.junkAlt) || prose(ctx.filename)]) {
     const t = usable(source, candidate.kind);
     if (t) return { description: t, confidence: 0.9, tier: 'T1' };
   }
@@ -220,6 +220,41 @@ export async function T1(candidate, lang) {
 // `filter[start_date]` is an ordinary form-name shape and came back as
 // "Filter[start date]" — bracket syntax read aloud, in English, on a Spanish
 // page. Flatten the brackets before humanising rather than after.
+// Some filenames are the caption, and often the alt attribute is that filename.
+// CNN ships
+// "Nigerian pastor Jerry Eze speaks during a prayer conference at Twickenham
+// Stadium in London- as thousands of worshippers gather for the event on
+// August 11- 2024..JPG", and we were discarding it to spend 4.5 s of model on
+// "A singer performing on a stage" — cheaper to get wrong, and wrong: the man
+// is a pastor at a prayer conference, not a singer.
+//
+// Most filenames are identifiers and must stay discarded: GettyImages-1338625942,
+// still_22958708_0_thumb, collision 1, IMG_2024_final. The test is whether what
+// remains reads like a sentence a person wrote — several real words, mostly
+// letters, no run of digits doing the naming.
+// Prefer the alt over the slug: CNN's alt keeps the sentence's capitals and
+// commas, while the filename arrives lowercased and hyphen-crushed. Same words,
+// one of them readable aloud.
+function prose(source) {
+  const raw = String(source || '').replace(/\.+[a-z0-9]{2,5}$/i, '');
+  if (!raw) return '';
+  const t = humanise(raw).replace(/\s*-\s*/g, ', ').replace(/\s+/g, ' ').trim();
+  const words = t.split(' ').filter((w) => /^[\p{L}][\p{L}'']*$/u.test(w) && w.length > 2);
+  if (words.length < 5) return '';                       // an id, not a sentence
+  if (words.length / t.split(' ').length < 0.6) return '';  // mostly numbers or codes
+  if (/\b[0-9a-f]{8,}\b/i.test(t)) return '';            // a hash wearing words
+
+  // CMS vocabulary wearing a sentence. "CNN Headlines International Placeholder
+  // Generic" clears every test above and describes nothing — and the model was
+  // right to answer honestly about that image rather than invent. One marker is
+  // tolerated, since a real caption may legitimately say "photo" or "image";
+  // two together is a naming convention, not a description.
+  const markers = words.filter((w) => /^(placeholder|generic|untitled|default|thumb|thumbnail|asset|banner|hero|header|footer|background|logo|icon|image|photo|screenshot|still|frame|final|copy|draft|temp|sample|template)$/i.test(w));
+  if (markers.length >= 2) return '';
+
+  return t.length >= 24 && t.length <= MAX_LENGTH ? t : '';
+}
+
 const humanise = (s) =>
   String(s || '').replace(/\[|\]/g, ' ').replace(/[-_+.]+/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2')
     .replace(/\s+/g, ' ').trim().replace(/^./, (c) => c.toUpperCase());

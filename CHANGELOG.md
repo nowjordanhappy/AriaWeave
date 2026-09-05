@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Naming gaps are found and fixed in the live DOM: missing and junk `alt` on
   images, icon-only buttons and links, unlabelled form inputs. Content that
   arrives after first paint is caught too.
+- When a filename or a junk `alt` is actually a caption, it is reused verbatim
+  instead of asking a model — free, instant, and more accurate than a guess.
 - Descriptions are generated through the tiered pipeline: rules first, then OCR
   for text-heavy images, then the on-device model, and only then the cloud.
 - Repeat visits reuse a stored description instead of re-inferring one. A failed
