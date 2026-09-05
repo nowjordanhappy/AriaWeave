@@ -16,6 +16,7 @@ import { route } from './router.js';
 import * as cache from './cache.js';
 import {
   T1, T2, T3, T4, loadImage, pickLang, honestFallback, visionPrompt,
+  warm,
   nanoAvailability, ocrAvailable, cloudAvailable,
 } from './pipeline.js';
 
@@ -38,6 +39,10 @@ import { check as laneCVerify } from '../verifier/index.js';
 // would return the same string and prove nothing; the loop only has something
 // to feed back when a model is answering. Evidence has to come from a live run.
 const LOOP_LOG_MAX = 40;
+// Fire and forget on worker start: nothing waits on it, and a failure is the
+// ordinary no-model branch rather than an error.
+warm().then((ok) => console.info(`[AriaWeave] on-device model ${ok ? 'warmed' : 'not available'}`));
+
 console.info('[AriaWeave loop] instrumentation active — every tier outcome is logged, '
   + 'so an empty console means nothing ran, not that nothing was rejected.');
 const loopEvents = [];

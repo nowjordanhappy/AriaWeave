@@ -251,6 +251,26 @@ const nanoApi = () =>
 let nanoState;   // 'ready' | 'absent'
 let nanoSession;
 
+// Wake the on-device components before a candidate needs them.
+//
+// The first description on a page measured 16.7 s while later ones took ~1.5 s.
+// Almost all of that gap is cold start: Chrome initialising the LanguageDetector
+// and loading the model into memory for a new session. Neither depends on the
+// page, so neither has to happen while a reader waits.
+//
+// Guarded on 'ready': create() throws NotAllowedError when the model is merely
+// downloadable, because Chrome will not fetch gigabytes without a user gesture
+// (SPEC §3.3.2). Warming must never be the thing that trips that.
+export async function warm() {
+  try {
+    if (await nanoAvailability() !== 'ready') return false;
+    await nano();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function nanoAvailability() {
   const api = nanoApi();
   if (!api) return 'absent';
