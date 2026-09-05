@@ -168,6 +168,15 @@ const MARKERS = {
 // Returns null for "cannot tell" — too short, or a tie.
 export function guessLanguage(text, want) {
   if (!MARKERS[base(want)]) return null;
+
+  // Abstain below four words. A marker count on a short label is not evidence:
+  // "Ir a Facebook" carries no Spanish stopword from any reasonable list while
+  // "a" sits in the English one, so counting called correct Spanish English and
+  // rejected it. Control labels are routinely two or three words, which is
+  // exactly where this heuristic stops meaning anything — and unlike the async
+  // detector, which has DETECT_CONFIDENCE to hold it back, this fallback had no
+  // such floor.
+  if (String(text).trim().split(/\s+/).filter(Boolean).length < 4) return null;
   const hits = (lang) => (String(text).match(MARKERS[lang]) ?? []).length;
   const es = hits('es'), en = hits('en');
   if (es === en) return null;
@@ -231,8 +240,12 @@ export async function detectPageLanguage(declared, sampleText) {
  * Pass it from `detectPageLanguage().conflict`.
  */
 export async function check(input, opts) {
-  const { text, lang, langUndecided = false } = args(input, opts);
-  const rules = verify(text, { lang });
+  // `kind` was destructured out and never forwarded, so verify() fell back to
+  // the image floor of 8 for every kind and rejected "Buscar" — a correct
+  // answer for a button — as too short. The rules and the caller disagreed
+  // about what was being verified.
+  const { text, lang, kind, langUndecided = false } = args(input, opts);
+  const rules = verify(text, { lang, kind });
   if (!rules.ok || rules.fallback) return rules;
   if (langUndecided) return { ok: true, langUndecided: true };
   return verifyLanguage(text, lang);

@@ -21,7 +21,13 @@ import {
 
 const CONCURRENCY = 2;          // two Nano sessions is the memory a laptop spares
 const MAX_ATTEMPTS = 4;         // hard cap: the retry loop cannot spin (SPEC 3.4)
-import { verify as laneCVerify } from '../verifier/index.js';
+// `check`, not `verify`. verifier/API.md line 81 says it plainly: verify() is
+// the synchronous rules ALONE, check() is verify() plus the async language
+// rule. Lane B's own comment below guessed `verify`, and wiring it up yesterday
+// copied that guess without opening the API document sitting beside it — so the
+// language rule, the one rule that would have rejected anything on a real page,
+// was never running. Documented seam, unread documentation.
+import { check as laneCVerify } from '../verifier/index.js';
 
 // SPEC §6 criterion 3 wants a recorded autonomous loop: generate, verifier
 // rejects, regenerate with the rejection as feedback, pass — no human in
@@ -76,7 +82,7 @@ const TIER_FN = { T1, T2, T3, T4 };
 //
 // Until a placeholder `verifier/index.js` lands the way content/ and background/
 // got theirs, the rules below stand in. Landing it is then a one-line change:
-//     import { verify as laneC } from '../verifier/index.js';
+//     import { check as laneC } from '../verifier/index.js';
 // ---------------------------------------------------------------------------
 
 // WIRED 2026-09-03. The placeholder lane B was waiting for now exists, so the

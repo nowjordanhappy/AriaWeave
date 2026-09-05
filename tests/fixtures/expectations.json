@@ -133,6 +133,16 @@
     }
   },
 
+  "13-loop-provocation.html": {
+    "lang": "es",
+    "axeRules": ["image-alt"],
+    "violationsBefore": 0,
+    "note": "Zero axe violations on purpose: an <img> with a title has an accessible name, so image-alt does not fire. The name is in the wrong language, which only criterion 2 can see — the pair earning its keep again. SPEC §6 criterion 3. The English title makes T1 answer in English on a Spanish page; the verifier rejects for language and the reason escalates as feedback. Deterministic on the rejection; the pass needs a profile with the on-device model.",
+    "candidates": {
+      "comunicado": { "kind": "img", "reference": "Un aviso que informa que la oficina estará cerrada el lunes por feriado nacional" }
+    }
+  },
+
   "12-language-provocation.html": {
     "lang": "es",
     "axeRules": ["image-alt"],
