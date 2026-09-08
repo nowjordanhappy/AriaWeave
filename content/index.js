@@ -627,6 +627,15 @@ const INSPECTOR_ID = 'ariaweave-inspector';
 // "0 elementos" on gob.pe while the popup — which reads live state — showed 3.
 // Two views of the same data disagreeing is worse than one view: it makes the
 // reader distrust both. Re-render whenever a record lands.
+// The overlay runs inside the page, so it can keep the element rather than a
+// path to it. bbc.com re-renders its header, the positional selector stops
+// resolving, and every click reported "ya no está" for an element that was
+// still on screen — the selector had gone stale, not the button. The popup
+// still needs the selector, because it lives in another context and can only
+// speak in messages.
+const recordEl = new Map();
+let recordSeq = 0;
+
 let inspectorPending = false;
 setInterval(() => { if (inspecting && enabled && (pending.size + inFlightCount) > 0) refreshInspector(); }, 900);
 function refreshInspector() {
@@ -709,8 +718,14 @@ function inspectorRow(r) {
         + 'padding:0;border:0;background:none;color:inherit;font:inherit;font-weight:600;'
         + 'cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px';
       what.addEventListener('click', () => {
-        if (!reveal(r.selector)) what.textContent += ' — ya no está';
+        const el = recordEl.get(r.seq)?.deref();
+        const found = reveal(el || r.selector);
+        // Set, never append: clicking a missing element five times used to
+        // stamp "ya no está" five times onto the label.
+        what.dataset.gone = found ? '' : '1';
+        what.textContent = base + (found ? '' : ' — ya no está en la página');
       });
+      const base = what.textContent;
 
       const body = document.createElement('span');
       body.style.whiteSpace = 'pre-line';
@@ -740,10 +755,12 @@ function stop() {
 // let the page answer: scroll the element into view and flash a ring around it.
 // The ring is drawn with an outline on a data-ariaweave-ui element so the
 // observer ignores it and it cannot re-enter the scan.
-function reveal(selector) {
-  let el;
-  try { el = document.querySelector(selector); } catch { return false; }
-  if (!el) return false;
+function reveal(target) {
+  let el = target instanceof Element ? target : null;
+  if (!el) {
+    try { el = document.querySelector(target); } catch { return false; }
+  }
+  if (!el || !el.isConnected) return false;
 
   el.scrollIntoView({ block: 'center', behavior: 'smooth' });
 
