@@ -134,4 +134,4 @@ autonomous verifier loop is recorded verbatim, the latency and idempotency
 budgets are measured, and a real Peruvian government page is captured and
 tested offline.
 
-Built for Howdy Dev Day 2026.
+Started at Howdy Dev Day 2026.
