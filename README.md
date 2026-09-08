@@ -75,6 +75,30 @@ that T3 already reads text out of images — see [SPEC §7.1](docs/SPEC.md).
 - **Per-session, per-user.** It fixes the page for this person, now. That is the
   positioning, not a shortfall.
 
+## This is not an overlay
+
+Accessibility overlays (accessiBe, UserWay, AudioEye) are scripts a **site owner**
+installs to claim their site is now compliant. They are widely disliked because
+they do not work well and they remove the pressure to fix anything properly.
+
+AriaWeave inverts every part of that:
+
+| Overlay | AriaWeave |
+|---|---|
+| Installed by the site owner | Installed by the person browsing |
+| Changes what every visitor gets | Changes nothing for anyone else |
+| Claims the site is now accessible | Claims nothing about the site |
+| Lets the owner stop fixing things | The owner never knows it ran |
+
+The site is still broken after AriaWeave runs. This does not repair the web, and
+nobody should treat it as evidence that a site is fine. It is a coping tool for
+the person in front of the page right now, on sites they do not own and cannot
+file a ticket against.
+
+It shares one weakness with every automated approach: it can be wrong. That is
+why it says "not described with confidence" instead of guessing when nothing
+clears the bar. A wrong label is worse than no label.
+
 ## Running the harness
 
 ```
