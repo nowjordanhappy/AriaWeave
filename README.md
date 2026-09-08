@@ -1,7 +1,7 @@
 # AriaWeave
 
-**Names the buttons and links nobody labelled — and describes the images, when
-your machine can.**
+**Names the buttons, links and images that pages leave unlabelled, using
+Chrome's own built-in AI. Free, offline, no API key.**
 
 A Chrome extension (MV3) that repairs accessibility naming on any page, live, in
 the browser. It finds unlabelled controls and images, works out what they are,
