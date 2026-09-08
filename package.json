@@ -7,7 +7,8 @@
   },
   "scripts": {
     "test": "playwright test",
-    "report": "playwright show-report"
+    "report": "playwright show-report",
+    "package": "rm -rf dist ariaweave.zip && mkdir -p dist && cp -R manifest.json content background popup verifier dist/ && rm -f dist/background/selfcheck.js dist/verifier/verifier.test.js dist/verifier/API.md dist/verifier/FINDINGS.md && cd dist && zip -qr ../ariaweave.zip . && cd .. && rm -rf dist && unzip -l ariaweave.zip | tail -1"
   },
   "type": "module",
   "private": "true",

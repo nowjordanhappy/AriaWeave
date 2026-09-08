@@ -10,3 +10,7 @@ config.local.js
 test-results/
 playwright-report/
 tests/.cache/
+
+# build output
+ariaweave.zip
+dist/

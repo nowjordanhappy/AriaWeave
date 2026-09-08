@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-09-07
+
+First release. Load it unpacked; it is not on the Web Store.
+
 ### Added
 - Project specification and orchestration plan (`docs/SPEC.md`, `docs/SYSTEM.md`).
 - Development log (`AI-DEV-LOG.md`), written incrementally.
