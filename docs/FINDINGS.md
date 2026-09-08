@@ -248,3 +248,42 @@ label on elcomercio.pe (finding in SPEC §4.1 and the 15-banner-above-field
 fixture). Text borrowed from a region keeps turning out to be the weakest signal
 in the ladder, and it may deserve to sit below the type rule rather than above
 it.
+
+---
+
+## 8 — Never tested with a screen reader
+
+**Orchestrator. 2026-09-07, seven days out.**
+
+The extension has been measured against axe, a 73-test harness and four real
+sites. It has never been listened to.
+
+Everything this project does is aimed at someone using a screen reader, and no
+screen reader has read a page it repaired. What that leaves unknown is not
+cosmetic:
+
+- **Whether the labels sound right.** "Ir a Facebook" reads fine on paper; so
+  does a 200-character T3 description until you hear it announced in full on
+  every image in a list.
+- **Whether the language rule works where it matters.** §5 exists because a
+  screen reader takes its voice from the DOM. That has been reasoned about at
+  length and never once heard.
+- **Whether injected labels land where expected.** An `aria-label` on a link
+  that also has text content overrides it; whether that helps or hides
+  something is an empirical question.
+
+VoiceOver ships on the developer machine (⌘F5). This is an hour of work and it
+is the only untested item that could change what the demo claims.
+
+**Also untested, in descending order of consequence:**
+
+| What | Why it matters |
+|---|---|
+| A clean Chrome profile | What an actual first-time user gets — we have only tested with the model present or with nothing at all |
+| Keyboard-only operation | The popup and overlay were built with focus states nobody has driven |
+| A long session | The observer left running for an hour on an open page |
+| The "report bad description" button | Built, never clicked |
+| Disabling mid-page | The toggle's off-path was never exercised |
+
+None of these are blocking. All of them are cheaper to find now than in front of
+a judge.
