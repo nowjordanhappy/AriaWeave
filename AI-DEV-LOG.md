@@ -317,3 +317,59 @@ to a subscription banner six levels up the tree; the class names were being
 discarded entirely; and "Anterior" was being rejected by a language detector
 that was confident and wrong. Three defects, one page, none of them expressible
 in a corpus written by the person who wrote the bugs.
+
+---
+
+## 2026-09-07 — What a screen reader does that axe cannot see
+
+Finding 8 was written the day before: measured against axe, a 73-test harness
+and four real sites, never once listened to. Listening took an hour and changed
+what the demo can claim.
+
+**VoiceOver on `10-icon-only-controls.html`, extension off:**
+
+```
+enlace contacto
+enlace informe anual 2026 pdf
+enlace munilima
+button
+```
+
+Three of the four already said something useful. Not because they have names —
+Chrome's accessibility tree reports the computed name as `""` for every one of
+them, and axe flags all four. **VoiceOver falls back to reading the URL when a
+link has no accessible name, and neither axe nor the AX tree models that.**
+
+So for a moment it looked as though the href rules in T1 — the ones this log
+celebrated on 2026-09-04 — were duplicating work the screen reader already did.
+
+Measured properly, with `Accessibility.getFullAXTree` before and after:
+
+| | name without | name with |
+|---|---|---|
+| link `/contacto` | `""` | `Contacto` |
+| link to a PDF | `""` | `Descargar el informe anual 2026 en PDF` |
+| link to facebook.com | `""` | `Ir a Facebook` |
+| icon button | `""` | `Buscar` |
+| three form inputs | `""` | their real labels |
+| three images | `""` | descriptions |
+
+Both things are true at once, and the honest version is more precise than the
+pitch was:
+
+- **Links**: VoiceOver's URL fallback papers over the gap **when the URL happens
+  to be a sentence**. `/contacto` reads well. `/p/3f9a2` and `?id=44812` do not,
+  and that is most of the real web. Our gain there is turning a path into prose,
+  and it is smaller than claimed on well-named sites.
+- **Buttons, inputs and images**: no fallback exists. `button`, `campo de texto`,
+  silence. The gain is total.
+
+**The methodological point outlives the finding.** Every measurement this
+project made asked "does an accessible name exist" — the question axe asks. A
+screen reader asks "what do I say", and answers it with heuristics no static
+checker knows about. A tool built for screen reader users, validated entirely
+against a checker, can be right about the letter and wrong about the experience.
+
+The demo should say the truer thing: not "these controls are unusable", but "a
+screen reader guesses from the URL, and on half the web the URL is a serial
+number".

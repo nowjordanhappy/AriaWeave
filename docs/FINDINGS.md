@@ -251,7 +251,22 @@ it.
 
 ---
 
-## 8 — Never tested with a screen reader
+## 8 — PARTLY CLOSED 2026-09-07 — tested with VoiceOver, and it changed the pitch
+
+> Listened to. VoiceOver reads a link's URL when the link has no accessible
+> name — a fallback invisible to axe and to Chrome's accessibility tree, both of
+> which correctly report the name as empty. So on a site with descriptive URLs
+> our gain for links is smaller than claimed; for buttons, inputs and images,
+> where no fallback exists, it is total. Full measurement in `AI-DEV-LOG.md`.
+>
+> **The video should claim the truer thing:** not that these controls are
+> unusable, but that a screen reader guesses from the URL and on much of the web
+> the URL is a serial number.
+>
+> Still untested from the list below: a clean profile, keyboard-only operation,
+> a long session, the report button.
+
+### Original entry — never tested with a screen reader
 
 **Orchestrator. 2026-09-07, seven days out.**
 
